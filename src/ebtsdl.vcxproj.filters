@@ -1,0 +1,69 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <ClInclude Include="ESPboy_EBT\ebt_dlg_confirm.h">
+      <Filter>EBT_core</Filter>
+    </ClInclude>
+    <ClInclude Include="ESPboy_EBT\ebt_dlg_file_browser.h">
+      <Filter>EBT_core</Filter>
+    </ClInclude>
+    <ClInclude Include="ESPboy_EBT\ebt_dlg_input_name.h">
+      <Filter>EBT_core</Filter>
+    </ClInclude>
+    <ClInclude Include="ESPboy_EBT\ebt_edit_config.h">
+      <Filter>EBT_core</Filter>
+    </ClInclude>
+    <ClInclude Include="ESPboy_EBT\ebt_edit_info.h">
+      <Filter>EBT_core</Filter>
+    </ClInclude>
+    <ClInclude Include="ESPboy_EBT\ebt_edit_instrument.h">
+      <Filter>EBT_core</Filter>
+    </ClInclude>
+    <ClInclude Include="ESPboy_EBT\ebt_edit_order.h">
+      <Filter>EBT_core</Filter>
+    </ClInclude>
+    <ClInclude Include="ESPboy_EBT\ebt_edit_pattern.h">
+      <Filter>EBT_core</Filter>
+    </ClInclude>
+    <ClInclude Include="ESPboy_EBT\ebt_edit_song.h">
+      <Filter>EBT_core</Filter>
+    </ClInclude>
+    <ClInclude Include="ESPboy_EBT\ebt_file.h">
+      <Filter>EBT_core</Filter>
+    </ClInclude>
+    <ClInclude Include="ESPboy_EBT\ebt_input.h">
+      <Filter>EBT_core</Filter>
+    </ClInclude>
+    <ClInclude Include="ESPboy_EBT\ebt_load_save.h">
+      <Filter>EBT_core</Filter>
+    </ClInclude>
+    <ClInclude Include="ESPboy_EBT\ebt_main.h">
+      <Filter>EBT_core</Filter>
+    </ClInclude>
+    <ClInclude Include="ESPboy_EBT\ebt_player.h">
+      <Filter>EBT_core</Filter>
+    </ClInclude>
+    <ClInclude Include="dirent.h">
+      <Filter>SDL_target</Filter>
+    </ClInclude>
+    <ClInclude Include="ESPboy_EBT\ebt_vumeter.h">
+      <Filter>EBT_core</Filter>
+    </ClInclude>
+  </ItemGroup>
+  <ItemGroup>
+    <Filter Include="EBT_core">
+      <UniqueIdentifier>{aad2e734-545d-41e4-872c-abd76f325e65}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="SDL_target">
+      <UniqueIdentifier>{3ba43276-e6aa-4636-b702-b7c1e7c7e012}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="main.cpp">
+      <Filter>SDL_target</Filter>
+    </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <ResourceCompile Include="resource.rc" />
+  </ItemGroup>
+</Project>
