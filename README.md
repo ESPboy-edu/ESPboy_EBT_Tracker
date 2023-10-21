@@ -1,7 +1,7 @@
 # ESPboy EBT Tracker
 [by shiru8bit](https://shiru.untergrund.net) (shiru@mail.ru) 
 
-(WTFPL license)[https://ru.wikipedia.org/wiki/WTFPL]
+[WTFPL license](https://ru.wikipedia.org/wiki/WTFPL)
 
 **[User Manual](https://github.com/ESPboy-edu/ESPboy_EBT_Tracker/blob/main/EBT%20-%20ESPboy%20tracker.pdf?raw=true)**
 
