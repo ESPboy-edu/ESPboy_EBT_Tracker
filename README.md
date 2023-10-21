@@ -4,12 +4,18 @@ ESPboy tracker by shiru8bit (shiru@mail.ru) WTFPL
 [User Manual](https://github.com/ESPboy-edu/ESPboy_EBT_Tracker/blob/main/EBT%20-%20ESPboy%20tracker.pdf?raw=true)
 
 About
+
 EBT is a tiny, minimalistic, yet quite powerful chiptune-like music editor with a tracker interface, originally developed for the ESPboy portable DIY handheld platform.
 The source code is portable, so it may be available on other platforms as well. Currently it features an SDL port, so it can run on a regular desktop PC as well, sharing the same data format, so the song and instrument files are easily transferable between the devices.
 
 
 ![ESPboy2 EBT Tracker pic](https://github.com/ESPboy-edu/ESPboy_EBT_Tracker/blob/main/ESPboy2_EBT_Tracker_look.png?raw=true)
 
+Outputs
+
+A variety of the sound output options. The EBT now supports the built-in speaker via sigma-delta modulation, an external mono via SDM, a stereo PWM (was it ever done on the ESP8266?), and stereo via i2s DAC module. Also added gamma correction to the interface, easier to read now.
+
+![ESPboy2 EBT Tracker pic](https://github.com/ESPboy-edu/ESPboy_EBT_Tracker/blob/main/ebttrackeroutputs.png?raw=true)
 
 How to compile:
   - Install Arduino IDE https://www.arduino.cc/en/Main/Software
