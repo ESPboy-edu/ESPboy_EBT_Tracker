@@ -1,7 +1,7 @@
 # ESPboy EBT Tracker
-by shiru8bit (shiru@mail.ru) WTFPL
+[by shiru8bit](https://shiru.untergrund.net) (shiru@mail.ru) WTFPL
 
-[User Manual](https://github.com/ESPboy-edu/ESPboy_EBT_Tracker/blob/main/EBT%20-%20ESPboy%20tracker.pdf?raw=true)
+**[User Manual](https://github.com/ESPboy-edu/ESPboy_EBT_Tracker/blob/main/EBT%20-%20ESPboy%20tracker.pdf?raw=true)**
 
 # About
 
@@ -13,7 +13,7 @@ The source code is portable, so it may be available on other platforms as well. 
 
 # Outputs
 
-A variety of the sound output options. The EBT now supports the built-in speaker via sigma-delta modulation, an external mono via SDM, a stereo PWM (was it ever done on the ESP8266?), and stereo via i2s DAC module. Also added gamma correction to the interface, easier to read now.
+A variety of the sound output options. The EBT now supports the built-in speaker via sigma-delta modulation, an external mono via SDM, a stereo PWM (was it ever done on the ESP8266?), and stereo via i2s DAC module. [Check I2S DAC module connection schematic here](https://github.com/ESPboy-edu/ESPboy_PT3Play)
 
 ![ESPboy2 EBT Tracker pic](https://github.com/ESPboy-edu/ESPboy_EBT_Tracker/blob/main/ebttrackeroutputs.png?raw=true)
 
@@ -24,7 +24,7 @@ A variety of the sound output options. The EBT now supports the built-in speaker
   - Select the "LOLIN(WEMOS) D1 R2 & mini" board in the Arduino IDE and compile this code
 
 
-IMPORTANT!
+**IMPORTANT!**
   if you are using/updating original TFTeSPI library
   you have to edit or replace usersetup.h file in the TFTeSPI folder in your Arduino libraries collection
   according to this https://github.com/ESPboy-edu/ESPboy_ArduinoIDE_Libraries/blob/master/TFT_eSPI-master/User_Setup.h
