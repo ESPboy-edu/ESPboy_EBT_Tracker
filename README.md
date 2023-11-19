@@ -11,8 +11,9 @@ EBT is a tiny, minimalistic, yet quite powerful chiptune-like music editor with 
 The source code is portable, so it may be available on other platforms as well. Currently it features an SDL port, so it can run on a regular desktop PC as well, sharing the same data format, so the song and instrument files are easily transferable between the devices.
 
 
-# v1.1 features:
+# v1.1 features
 
+- Added EBT tracks player (Arduino IDE source code). So you can play EBT tracks in your own projects.
 - 4 channels polyphony
 - Speed control with an automatic shuffle
 - Up to 128 order list positions with per-pattern transpose support
