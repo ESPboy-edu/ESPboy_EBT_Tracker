@@ -7,7 +7,7 @@
 
 # About
 
-EBT is a tiny, minimalistic, yet quite powerful chiptune-like music editor with a tracker interface, originally developed for the [ESPboy portable DIY](www.espboy.com) handheld platform.
+EBT is a tiny, minimalistic, yet quite powerful chiptune-like music editor with a tracker interface, originally developed for the [ESPboy portable DIY](www.espboy.com) but it also works on any ESPboy handheld platform.
 The source code is portable, so it may be available on other platforms as well. Currently it features an SDL port, so it can run on a regular desktop PC as well, sharing the same data format, so the song and instrument files are easily transferable between the devices.
 
 
