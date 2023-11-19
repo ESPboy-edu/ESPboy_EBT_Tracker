@@ -49,6 +49,21 @@
     <ClInclude Include="ESPboy_EBT\ebt_vumeter.h">
       <Filter>EBT_core</Filter>
     </ClInclude>
+    <ClInclude Include="ESPboy_EBT\ebt_export.h">
+      <Filter>EBT_core</Filter>
+    </ClInclude>
+    <ClInclude Include="ESPboy_EBT\ebt_vars.h">
+      <Filter>EBT_core</Filter>
+    </ClInclude>
+    <ClInclude Include="ESPboy_EBT\ebt_song.h">
+      <Filter>EBT_core</Filter>
+    </ClInclude>
+    <ClInclude Include="ESPboy_EBT\ebt_osd.h">
+      <Filter>EBT_core</Filter>
+    </ClInclude>
+    <ClInclude Include="ESPboy_EBT\ebt_synth.h">
+      <Filter>EBT_core</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <Filter Include="EBT_core">

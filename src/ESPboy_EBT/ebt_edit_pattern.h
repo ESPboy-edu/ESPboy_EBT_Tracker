@@ -8,6 +8,13 @@ enum {
 	PTN_MENU_ALL
 };
 
+enum {
+	PNT_COL_NOTE_OCTAVE = 0,
+	PTN_COL_INS,
+	PTN_COL_EFF_TYPE,
+	PTN_COL_EFF_PARAM
+};
+
 int8_t ptn_menu_cur = PTN_MENU_NUM;
 uint8_t ptn_menu_active = FALSE;
 int8_t ptn_menu_double_tap = 0;
@@ -32,7 +39,7 @@ void ebt_edit_pattern_draw(void)
 
 	//draw screen header
 
-	put_header("PTN", COL_HEAD_PTN);
+	ebt_put_header("PTN", COL_HEAD_PTN);
 
 	//draw pattern settings
 	
@@ -74,20 +81,22 @@ void ebt_edit_pattern_draw(void)
 
 	put_str(0, 11, "DEL");
 
+	int sy = Text.height - 3;
+
 	set_font_color(COL_TEXT_DARK);
 	set_back_color(COL_BACK);
-	put_str(0, 13, "EFF");
+	put_str(0, sy + 0, "EFF");
 
 	ebt_item_color((ptn_menu_cur == PTN_MENU_EFF) && ptn_menu_active);
 
 	snprintf(buf, sizeof(buf), "0%i", cur_eff_column + 1);
-	put_str(1, 14, buf);
+	put_str(1, sy + 1, buf);
 
 	//draw pattern body
 
-	int row = cur_ptn_row - TEXT_SCREEN_HGT / 2;
+	int row = cur_ptn_row - Text.height / 2;
 
-	if ((row + TEXT_SCREEN_HGT) >= song->ptns[cur_ptn_num].len) row = song->ptns[cur_ptn_num].len - TEXT_SCREEN_HGT;
+	if ((row + Text.height) >= song->ptns[cur_ptn_num].len) row = song->ptns[cur_ptn_num].len - Text.height;
 
 	if (row < 0) row = 0;
 
@@ -97,7 +106,7 @@ void ebt_edit_pattern_draw(void)
 
 	int16_t play_row = ebt_player_report_row_position();
 
-	for (int i = 0; i < TEXT_SCREEN_HGT; ++i)
+	for (int i = 0; i < Text.height; ++i)
 	{
 		pattern_row_struct* ns = &song->ptns[cur_ptn_num].rows[row];
 
@@ -285,8 +294,117 @@ void ebt_pattern_delete_row(void)
 
 
 
+void ebt_pattern_move_cur(int step, BOOL relative)
+{
+	if (relative)
+	{
+		cur_ptn_row += step;
+	}
+	else
+	{
+		cur_ptn_row = step;
+	}
+
+	while (cur_ptn_row < 0) cur_ptn_row += song->ptns[cur_ptn_num].len;
+	while (cur_ptn_row >= song->ptns[cur_ptn_num].len) cur_ptn_row -= song->ptns[cur_ptn_num].len;
+}
+
+
+
 void ebt_edit_pattern_update(void)
 {
+	uint8_t kb = ebt_input_get_kb();
+	
+	pattern_row_struct* ns = &song->ptns[cur_ptn_num].rows[cur_ptn_row];
+
+	if (kb == KB_TAB)
+	{
+		ptn_menu_active ^= TRUE;
+	}
+
+	if (!ptn_menu_active)
+	{
+		int8_t n = ebt_input_get_kb_hex();
+		char c = ebt_input_get_kb_char();
+
+		switch (cur_ptn_col)
+		{
+			case PNT_COL_NOTE_OCTAVE:
+			{
+				uint8_t prev_note = ns->note;
+
+				if (c >= '1'&&c <= '9') ns->note = (ns->note & 0x0f) | ((c - '0') << 4);
+
+				uint8_t octave = cur_ptn_prev_note & 0xf0;
+
+				switch (c)
+				{
+				case 'Z': ns->note = octave + 0; break;
+				case 'S': ns->note = octave + 1; break;
+				case 'X': ns->note = octave + 2; break;
+				case 'D': ns->note = octave + 3; break;
+				case 'C': ns->note = octave + 4; break;
+				case 'V': ns->note = octave + 5; break;
+				case 'G': ns->note = octave + 6; break;
+				case 'B': ns->note = octave + 7; break;
+				case 'H': ns->note = octave + 8; break;
+				case 'N': ns->note = octave + 9; break;
+				case 'J': ns->note = octave + 10; break;
+				case 'M': ns->note = octave + 11; break;
+				case 'A': ns->note = octave + 15; break;
+				}
+
+				if (kb == KB_BACKSPACE) ns->note = 0;
+
+				if (ns->note != prev_note) cur_ptn_prev_note = ns->note;
+			}
+			break;
+
+			case PTN_COL_INS:
+			{
+				uint8_t prev_ins = ns->ins;
+
+				if (n >= 0) ns->ins = (ns->ins << 4) + n;
+				if (kb == KB_BACKSPACE) ns->ins = 0;
+
+				if (ns->ins != prev_ins) cur_ptn_prev_ins = ns->ins;
+			}
+			break;
+
+			case PTN_COL_EFF_TYPE:
+			{
+				uint8_t prev_type = ns->effect[cur_eff_column].type;
+
+				if (n >= 0) ns->effect[cur_eff_column].type = n;
+				if (kb == KB_BACKSPACE) ns->effect[cur_eff_column].type = 0;
+
+				if (ns->effect[cur_eff_column].type != prev_type) cur_ptn_prev_effect = ns->effect[cur_eff_column].type;
+			}
+			break;
+
+			case PTN_COL_EFF_PARAM:
+			{
+				uint8_t prev_param = ns->effect[cur_eff_column].param;
+
+				if (n >= 0) ns->effect[cur_eff_column].param = (ns->effect[cur_eff_column].param << 4) + n;
+				if (kb == KB_BACKSPACE) ns->effect[cur_eff_column].param = 0;
+
+				if (ns->effect[cur_eff_column].param != prev_param) cur_ptn_prev_param = ns->effect[cur_eff_column].param;
+			}
+			break;
+		}
+
+		switch (kb)
+		{
+		case KB_INSERT: ebt_pattern_insert_row(); break;
+		case KB_DELETE: ebt_pattern_delete_row(); break;
+		case KB_PGUP: ebt_pattern_move_cur(-4, TRUE); break;
+		case KB_PGDOWN: ebt_pattern_move_cur(4, TRUE); break;
+		case KB_HOME: ebt_pattern_move_cur(0, FALSE); break;
+		case KB_END: ebt_pattern_move_cur(MAX_PATTERN_LEN - 1, FALSE); break;
+		}
+	}
+
 	int pad = ebt_input_get_state();
 	int pad_t = ebt_input_get_trigger();
 	int pad_r = ebt_input_get_repeat();
@@ -321,22 +439,6 @@ void ebt_edit_pattern_update(void)
 		{
 			switch (ptn_menu_cur)
 			{
-			case PTN_MENU_NUM:
-			{
-				uint8_t ptn = (uint8_t)cur_ptn_num;
-				ebt_change_param_u8(&ptn, pad_r, 1, 1, MAX_PATTERNS - 1, 16);
-				cur_ptn_num = ptn;
-			}
-			break;
-
-			case PTN_MENU_LEN:
-				ebt_change_param_u8(&song->ptns[cur_ptn_num].len, pad_r, DEFAULT_PATTERN_LEN, 1, MAX_PATTERN_LEN, 16);
-				break;
-
-			case PTN_MENU_LOOP:
-				ebt_change_param_u8(&song->ptns[cur_ptn_num].loop, pad_r, DEFAULT_PATTERN_LOOP, 0, 1, 1);
-				break;
-
 			case PTN_MENU_INSERT:
 				if (pad_t & PAD_ACT) ebt_pattern_insert_row();
 				break;
@@ -344,11 +446,30 @@ void ebt_edit_pattern_update(void)
 			case PTN_MENU_DELETE:
 				if (pad_t & PAD_ACT) ebt_pattern_delete_row();
 				break;
-
-			case PTN_MENU_EFF:
-				ebt_change_param_i8(&cur_eff_column, pad_r, 0, 0, MAX_EFFECTS_PER_ROW - 1, 1, 0);
-				break;
 			}
+		}
+
+		switch (ptn_menu_cur)
+		{
+		case PTN_MENU_NUM:
+		{
+			uint8_t ptn = (uint8_t)cur_ptn_num;
+			ebt_change_param_u8(&ptn, pad, pad_r, 1, 1, MAX_PATTERNS - 1, 16);
+			cur_ptn_num = ptn;
+		}
+		break;
+
+		case PTN_MENU_LEN:
+			ebt_change_param_u8(&song->ptns[cur_ptn_num].len, pad, pad_r, DEFAULT_PATTERN_LEN, 1, MAX_PATTERN_LEN, 16);
+			break;
+
+		case PTN_MENU_LOOP:
+			ebt_change_param_u8(&song->ptns[cur_ptn_num].loop, pad, pad_r, DEFAULT_PATTERN_LOOP, 0, 1, 1);
+			break;
+
+		case PTN_MENU_EFF:
+			ebt_change_param_i8(&cur_eff_column, pad, pad_r, 0, 0, MAX_EFFECTS_PER_ROW - 1, 1, 0);
+			break;
 		}
 
 		if (pad_t & PAD_ESC) ptn_menu_active = FALSE;
@@ -373,19 +494,8 @@ void ebt_edit_pattern_update(void)
 
 		if (pad & PAD_ESC) step = 4;
 
-		if (pad_r & PAD_UP)
-		{
-			cur_ptn_row -= step;
-
-			while (cur_ptn_row < 0) cur_ptn_row += song->ptns[cur_ptn_num].len;
-		}
-
-		if (pad_r & PAD_DOWN)
-		{
-			cur_ptn_row += step;
-
-			while (cur_ptn_row >= song->ptns[cur_ptn_num].len) cur_ptn_row -= song->ptns[cur_ptn_num].len;
-		}
+		if (pad_r & PAD_UP) ebt_pattern_move_cur(-step, TRUE);
+		if (pad_r & PAD_DOWN) ebt_pattern_move_cur(step, TRUE);
 
 		if (!(pad&PAD_ESC))
 		{
@@ -440,13 +550,11 @@ void ebt_edit_pattern_update(void)
 		}
 	}
 
-	pattern_row_struct* ns = &song->ptns[cur_ptn_num].rows[cur_ptn_row];
-
 	BOOL change = FALSE;
-
+	
 	switch (cur_ptn_col)
 	{
-	case 0:	//note and octave
+	case PNT_COL_NOTE_OCTAVE:	//note and octave
 	{
 		if (pad & PAD_ACT)
 		{
@@ -511,7 +619,7 @@ void ebt_edit_pattern_update(void)
 	}
 	break;
 
-	case 1:	//instrument number
+	case PTN_COL_INS:	//instrument number
 	{
 		if (pad & PAD_ACT)
 		{
@@ -582,7 +690,7 @@ void ebt_edit_pattern_update(void)
 	}
 	break;
 
-	case 2:	//effect type
+	case PTN_COL_EFF_TYPE:	//effect type
 	{
 		if (pad & PAD_ACT)
 		{
@@ -645,8 +753,8 @@ void ebt_edit_pattern_update(void)
 		}
 	}
 	break;
-
-	case 3:	//effect param
+	
+	case PTN_COL_EFF_PARAM:	//effect param
 	{
 		if (pad & PAD_ACT)
 		{

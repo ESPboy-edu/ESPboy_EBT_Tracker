@@ -43,7 +43,7 @@ void ebt_edit_order_draw(void)
 
 	//draw order header
 
-	put_header("ORD", COL_HEAD_ORD);
+	ebt_put_header("ORD", COL_HEAD_ORD);
 
 	set_font_color(COL_TEXT_DARK);
 	set_back_color(COL_BACK);
@@ -66,36 +66,38 @@ void ebt_edit_order_draw(void)
 
 	put_str(0, 9, "SEL");
 
+	int sy = Text.height - 5;
+	
 	set_font_color(COL_TEXT_DARK);
 	set_back_color(COL_BACK);
 
-	put_str(0, 13, "ABCD");
-
+	put_str(0, sy + 2, "ABCD");
+	
 	set_font_color(COL_TEXT);
 
 	ebt_item_color((order_menu_cur == ORDER_MENU_MUTE_A) && order_menu_active);
 
-	put_char(0, 14, (mute_state&MUTE_CH1) ? '\3' : '\5');
+	put_char(0, sy + 3, (mute_state&MUTE_CH1) ? '\3' : '\5');
 
 	ebt_item_color((order_menu_cur == ORDER_MENU_MUTE_B) && order_menu_active);
 
-	put_char(1, 14, (mute_state&MUTE_CH2) ? '\3' : '\5');
+	put_char(1, sy + 3, (mute_state&MUTE_CH2) ? '\3' : '\5');
 
 	ebt_item_color((order_menu_cur == ORDER_MENU_MUTE_C) && order_menu_active);
 
-	put_char(2, 14, (mute_state&MUTE_CH3) ? '\3' : '\5');
+	put_char(2, sy + 3, (mute_state&MUTE_CH3) ? '\3' : '\5');
 
 	ebt_item_color((order_menu_cur == ORDER_MENU_MUTE_D) && order_menu_active);
 
-	put_char(3, 14, (mute_state&MUTE_CH4) ? '\3' : '\5');
+	put_char(3, sy + 3, (mute_state&MUTE_CH4) ? '\3' : '\5');
 
-	ebt_vumeter_draw(0, 11);
+	ebt_vumeter_draw(0, sy);
 
 	//draw order body
 
-	int ord_pos = cur_ord_pos - TEXT_SCREEN_HGT / 2;
+	int ord_pos = cur_ord_pos - Text.height / 2;
 
-	if ((ord_pos + TEXT_SCREEN_HGT) >= MAX_ORDER_LEN) ord_pos = MAX_ORDER_LEN - TEXT_SCREEN_HGT;
+	if ((ord_pos + Text.height) >= MAX_ORDER_LEN) ord_pos = MAX_ORDER_LEN - Text.height;
 
 	if (ord_pos < 0) ord_pos = 0;
 
@@ -106,7 +108,7 @@ void ebt_edit_order_draw(void)
 
 	int16_t play_pos = ebt_player_report_order_position();
 
-	for (int row = 0; row < TEXT_SCREEN_HGT; ++row)
+	for (int row = 0; row < Text.height; ++row)
 	{
 		uint8_t col_back = COL_BACK_ROW;
 
@@ -142,11 +144,11 @@ void ebt_edit_order_draw(void)
 			{
 				if (!order_sel_active)
 				{
-					ebt_item_color_custom(1, COL_BACK_CUR_1, COL_BACK_CUR_2, col_back);
+					ebt_item_color_custom(1, COL_BACK_CUR_2, COL_BACK_CUR_1, col_back);
 				}
 				else
 				{
-					ebt_item_color_custom(1, COL_BACK_SEL, COL_BACK_CUR_2, COL_BACK_SEL);
+					ebt_item_color_custom(1, COL_BACK_CUR_2, COL_BACK_SEL, COL_BACK_SEL);
 				}
 			}
 			else
@@ -262,9 +264,28 @@ uint8_t ebt_find_first_unused_pattern(void)
 
 
 
+void ebt_order_move_cur(int step)
+{
+	cur_ord_pos += step;
+
+	if (cur_ord_pos < 0) cur_ord_pos = 0;
+	if (cur_ord_pos >= MAX_ORDER_LEN) cur_ord_pos = MAX_ORDER_LEN - 1;
+
+	cur_ord_same_pos = 0;
+}
+
+
+
 void ebt_edit_order_update(void)
 {
 	ebt_vumeter_update();
+
+	uint8_t kb = ebt_input_get_kb();
+
+	if (kb == KB_TAB)
+	{
+		order_menu_active ^= TRUE;
+	}
 
 	//check controls
 
@@ -274,6 +295,59 @@ void ebt_edit_order_update(void)
 
 	if (order_menu_double_tap) --order_menu_double_tap;
 	if (order_ptn_double_tap) --order_ptn_double_tap;
+
+	if (!order_menu_active)
+	{
+		int8_t n = ebt_input_get_kb_hex();
+
+		order_pos_struct* ops = &song->order.pos[cur_ord_pos];
+
+		switch (kb)
+		{
+		case KB_BACKSPACE:
+			if (!order_trans_mode)
+			{
+				ops->ptn[cur_ord_chn] = 0;
+			}
+			else
+			{
+				ops->trans[cur_ord_chn] = 0;
+			}
+			return;
+
+		case KB_INSERT: ebt_order_insert_pos(); return;
+		case KB_DELETE: ebt_order_delete_pos(); return;
+		case KB_PGUP: ebt_order_move_cur(-16); break;
+		case KB_PGDOWN: ebt_order_move_cur(16); break;
+		case KB_HOME: ebt_order_move_cur(-MAX_ORDER_LEN); break;
+		case KB_END: ebt_order_move_cur(MAX_ORDER_LEN); break;
+		}
+
+		if (!order_trans_mode)
+		{
+			if (n >= 0)
+			{
+				ops->ptn[cur_ord_chn] = ((ops->ptn[cur_ord_chn]) << 4) + n;
+				return;
+			}
+		}
+		else
+		{
+			if (n >= 0)
+			{
+				BOOL neg = ops->trans[cur_ord_chn] < 0 ? TRUE : FALSE;
+				ops->trans[cur_ord_chn] = n;
+				if (neg) ops->trans[cur_ord_chn] = -ops->trans[cur_ord_chn];
+				return;
+			}
+
+			if (kb == KB_MINUS)
+			{
+				ops->trans[cur_ord_chn] = -ops->trans[cur_ord_chn];
+				return;
+			}
+		}
+	}
 
 	if (order_menu_active)
 	{
@@ -380,23 +454,8 @@ void ebt_edit_order_update(void)
 
 		if (pad&PAD_ESC) step = 16;
 
-		if (pad_r&PAD_UP)
-		{
-			cur_ord_pos -= step;
-
-			if (cur_ord_pos < 0) cur_ord_pos = 0;
-
-			cur_ord_same_pos = 0;
-		}
-
-		if (pad_r&PAD_DOWN)
-		{
-			cur_ord_pos += step;
-
-			if (cur_ord_pos >= MAX_ORDER_LEN) cur_ord_pos = MAX_ORDER_LEN - 1;
-
-			cur_ord_same_pos = 0;
-		}
+		if (pad_r&PAD_UP) ebt_order_move_cur(-step);
+		if (pad_r&PAD_DOWN) ebt_order_move_cur(step);
 
 		if (!(pad&PAD_ESC))
 		{
@@ -530,7 +589,7 @@ void ebt_edit_order_update(void)
 
 			if (!trans) trans = cur_ord_prev_trans;
 
-			ebt_change_param_i8(&trans, pad_r, 0, -15, 15, 1, TRUE);
+			ebt_change_param_i8(&trans, pad, pad_r, 0, -15, 15, 1, TRUE);
 
 			if (pad&PAD_ESC)
 			{

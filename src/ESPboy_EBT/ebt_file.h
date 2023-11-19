@@ -32,14 +32,18 @@ BOOL ebt_file_open(const char* filename, BOOL write)
 {
   char filepath[MAX_PATH];
 
-  printf("opening %s for %s\n", filename, write ? "write" : "read");
-
   strncpy(filepath, dataDirectory, sizeof(filepath) - 1);
   strncat(filepath, filename, sizeof(filepath) - 1);
 
+  printf("opening %s for %s\n", filepath, write ? "write" : "read");
+
   ebt_file_handler = fopen(filepath, write ? "wt" : "rt");
 
-  if (!ebt_file_handler) return FALSE;
+  if (!ebt_file_handler)
+  {
+	  printf("failed!\n");
+	  return FALSE;
+  }
 
   return TRUE;
 }

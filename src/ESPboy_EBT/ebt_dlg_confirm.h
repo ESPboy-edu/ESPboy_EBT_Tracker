@@ -24,10 +24,10 @@ void ebt_confirm_draw(void)
 	set_font_color(COL_TEXT);
 	set_back_color(COL_BACK_WARN);
 
-	int cx = TEXT_SCREEN_WDT / 2;
-	int cy = TEXT_SCREEN_HGT / 2;
+	int cx = Text.width / 2;
+	int cy = Text.height / 2;
 
-	for (int i = 0; i < TEXT_SCREEN_WDT; ++i) put_char(i, cy - 1, ' ');
+	for (int i = 0; i < Text.width; ++i) put_char(i, cy - 1, ' ');
 
 	put_str((signed char)(cx - strlen(ebt_confirm_msg) / 2), cy - 1, ebt_confirm_msg);
 

@@ -1,4 +1,4 @@
-int16_t vu_meter_level[MAX_CHANNELS];
+int8_t vu_meter_level[MAX_CHANNELS];
 
 
 
@@ -24,7 +24,7 @@ void ebt_vumeter_draw(uint8_t sx, uint8_t sy)
 
 	for (int ch = 0; ch < MAX_CHANNELS; ++ch)
 	{
-		int level = (vu_meter_level[ch]>>8);
+		int level = (vu_meter_level[ch] >> 4);
 
 		put_char(sx + ch, sy + 0, vu_bar[level * 2 + 1]);
 		put_char(sx + ch, sy + 1, vu_bar[level * 2 + 0]);
@@ -37,13 +37,15 @@ void ebt_vumeter_update(void)
 {
 	for (int ch = 0; ch < MAX_CHANNELS; ++ch)
 	{
-		if (player.active&&player.chn[ch].synth.running)
+		if (player.active&&synth.chn[ch].running)
 		{
-			vu_meter_level[ch] = (player.chn[ch].synth.volume + 1) << 8;
+			vu_meter_level[ch] = synth.chn[ch].volume << 4;
 		}
+		else
+		{
+			vu_meter_level[ch] -= 16;
 
-		vu_meter_level[ch] -= 64;
-
-		if (vu_meter_level[ch] < 0) vu_meter_level[ch] = 0;
+			if (vu_meter_level[ch] < 0) vu_meter_level[ch] = 0;
+		}
 	}
 }

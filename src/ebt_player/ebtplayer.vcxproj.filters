@@ -1,0 +1,30 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <ClInclude Include="dirent.h">
+      <Filter>SDL_target</Filter>
+    </ClInclude>
+    <ClInclude Include="ESPboy_EBT_player\ebt_player.h">
+      <Filter>EBT_player</Filter>
+    </ClInclude>
+    <ClInclude Include="ESPboy_EBT_player\ebt_synth.h">
+      <Filter>EBT_player</Filter>
+    </ClInclude>
+    <ClInclude Include="ESPboy_EBT_player\FRZNG_POINT.h">
+      <Filter>EBT_player</Filter>
+    </ClInclude>
+  </ItemGroup>
+  <ItemGroup>
+    <Filter Include="SDL_target">
+      <UniqueIdentifier>{3ba43276-e6aa-4636-b702-b7c1e7c7e012}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="EBT_player">
+      <UniqueIdentifier>{aad2e734-545d-41e4-872c-abd76f325e65}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="main.cpp">
+      <Filter>SDL_target</Filter>
+    </ClCompile>
+  </ItemGroup>
+</Project>

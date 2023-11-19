@@ -3,64 +3,6 @@
 
 
 
-void song_clear(BOOL clear_instruments)
-{
-	mute_state = 0;
-
-	order_trans_mode = FALSE;
-
-	cur_ptn_row = 0;
-	cur_ptn_col = 0;
-	cur_ptn_num = 1;
-	cur_ord_pos = 0;
-	cur_ord_chn = 0;
-	cur_ord_prev_ptn = 1;
-	cur_ord_prev_trans = 1;
-	cur_ptn_prev_note = 3 << 4;	//C-3
-	cur_ord_same_pos = 0;
-	cur_ptn_prev_ins = 1;
-	cur_ptn_prev_effect = 1;
-	cur_ptn_prev_param = 1;
-	cur_ins = 1;
-	cur_eff_column = 0;
-
-	song->speed_even = DEFAULT_SONG_SPEED;
-	song->speed_odd = DEFAULT_SONG_SPEED;
-	song->speed_interleave = 1;
-
-	memset(&song->order, 0, sizeof(order_struct));
-
-	song->order.loop_start = MAX_ORDER_LEN - 1;
-	song->order.loop_end = MAX_ORDER_LEN - 1;
-
-	for (int ptn = 0; ptn < MAX_PATTERNS; ++ptn)
-	{
-		memset(&song->ptns[ptn], 0, sizeof(pattern_struct));
-
-		song->ptns[ptn].len = DEFAULT_PATTERN_LEN;
-		song->ptns[ptn].loop = DEFAULT_PATTERN_LOOP;
-	}
-
-	ins_default = &song->ins[0];
-
-	memset(ins_default, 0, sizeof(instrument_struct)); //also used in the song save function
-
-	ins_default->volume = DEFAULT_VOLUME;
-	ins_default->base_note = DEFAULT_BASE_NOTE;
-
-	if (clear_instruments)
-	{
-		for (int ins = 1; ins < MAX_INSTRUMENTS; ++ins)
-		{
-			memcpy(&song->ins[ins], ins_default, sizeof(instrument_struct));
-		}
-	}
-
-	osd_message_clear();
-}
-
-
-
 int ebt_parse_hex_char(char c)
 {
 	if (c >= '0'&&c <= '9') return c - '0';
@@ -88,6 +30,24 @@ uint8_t ebt_parse_hex4(const char* line)
 uint8_t ebt_parse_hex8(const char* line)
 {
 	return (ebt_parse_hex_char(line[0]) << 4) | ebt_parse_hex_char(line[1]);
+}
+
+
+
+void ebt_parse_str(const char* line, char* str, int str_size)
+{
+	int ptr = 0;
+
+	while (1)
+	{
+		if (ptr >= str_size) break;
+
+		char c = *line++;
+
+		if (c < ' ') break;
+
+		str[ptr++] = c;
+	}
 }
 
 
@@ -200,7 +160,7 @@ BOOL ebt_song_load(const char* filename)
 		return FALSE;
 	}
 
-	song_clear(TRUE);
+	ebt_song_clear(TRUE);
 
 	while (1)
 	{
@@ -224,6 +184,15 @@ BOOL ebt_song_load(const char* filename)
 				if (ebt_parse_tag(line, "se")) song->speed_even = param;
 				if (ebt_parse_tag(line, "so")) song->speed_odd = param;
 				if (ebt_parse_tag(line, "si")) song->speed_interleave = param;
+				if (ebt_parse_tag(line, "sn")) ebt_parse_str(line + 2, song->name, sizeof(song->name));
+				if (ebt_parse_tag(line, "sa")) ebt_parse_str(line + 2, song->author, sizeof(song->author));
+				if (ebt_parse_tag(line, "dp"))
+				{
+					for (int ch = 0; ch < MAX_CHANNELS; ++ch)
+					{
+						song->pan_default[ch] = (int8_t)ebt_parse_hex8(line + 2 + ch * 2);
+					}
+				}
 			}
 		}
 
@@ -351,6 +320,20 @@ BOOL ebt_song_save(const char* filename)
 	ebt_file_put_line(ebt_make_hex8("se", song->speed_even));
 	ebt_file_put_line(ebt_make_hex8("so", song->speed_odd));
 	ebt_file_put_line(ebt_make_hex8("si", song->speed_interleave));
+	snprintf(buf, sizeof(buf), "sn%s", song->name);
+	ebt_file_put_line(buf);
+	snprintf(buf, sizeof(buf), "sa%s", song->author);
+	ebt_file_put_line(buf);
+
+	snprintf(buf, sizeof(buf), "dp");
+	for (int ch = 0; ch < MAX_CHANNELS; ++ch)
+	{
+		char bufp[3];
+		snprintf(bufp, sizeof(bufp), "%2.2X", (uint8_t)song->pan_default[ch]);
+		strncat(buf, bufp, sizeof(buf) - 1);
+	}
+	ebt_file_put_line(buf);
+
 	ebt_file_put_line("me");
 
 	//order list section

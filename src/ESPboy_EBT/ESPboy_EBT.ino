@@ -14,18 +14,40 @@
   according to this https://github.com/ESPboy-edu/ESPboy_ArduinoIDE_Libraries/blob/master/TFT_eSPI-master/User_Setup.h
 */
 
+//define only one of the three options below
 
-#include "lib/ESPboyInit.h"
-#include "lib/ESPboyInit.cpp"
+#define USE_TFTESPI     //regular 128x128 screen via TFTeSPI and nbSPI, fastest rendering
+//#define USE_LOVYANGFX   //regular 128x128 screen via LovyanGFX, no nbSPI
+//#define USE_240320    //large 240x320 screen via LovyanGFX, for the custom-built EBTboy
+
+
+#ifdef USE_TFTESPI
+#include "lib/tftespi/ESPboyInit.h"
+#include "lib/tftespi/ESPboyInit.cpp"
+#define USE_NBSPI   //can be reverted to default TFT_eSPI method, slower but (presumably) more compatible
+#endif
+
+#ifdef USE_LOVYANGFX
+#include "lib/lovyangfx/ESPboyInit.h"
+#include "lib/lovyangfx/ESPboyInit.cpp"
+#undef USE_NBSPI  //this library does not work with nbSPI by some reason
+#endif
+
+#ifdef USE_240320
+#include "lib/lovyangfx_tft20/ESPboyInit.h"
+#include "lib/lovyangfx_tft20/ESPboyInit.cpp"
+#undef USE_NBSPI
+#endif
+
+#ifdef USE_NBSPI
+#include "nbSPI.h"
+#endif
 
 #include <LittleFS.h>
 #include <sigma_delta.h>
 #include <I2S.h>
 
-#define USE_NBSPI   //can be reverted to TFT_eSPI, slower but (presumably) more compatible
-#ifdef USE_NBSPI
-#include "nbSPI.h"
-#endif
+
 
 #define TARGET_ESPBOY
 
@@ -38,23 +60,42 @@ int8_t hasDAC;
 #define EXT_SOUND_L_PIN     D6  //for stereo PWM
 #define EXT_SOUND_R_PIN     D8
 
-#include "font_custom.h" //128 1-bit 8x8 characters
-#include "font_c64.h"
-#include "font_msx.h"
-#include "font_zx.h"
+#ifndef USE_240320
+
+#include "fonts/custom_8x8.h" //128 1-bit 8x8 characters
+#include "fonts/c64_8x8.h"
+#include "fonts/msx_8x8.h"
+#include "fonts/zx_8x8.h"
 
 const uint8_t* font_data[4] = {
-  font_custom,
-  font_c64,
-  font_msx,
-  font_zx
+  custom_8x8,
+  c64_8x8,
+  msx_8x8,
+  zx_8x8
 };
+
+#else
+
+#include "fonts/custom_15x16.h" //128 1-bit 15x16 characters (stored as 16x16)
+#include "fonts/c64_15x16.h"
+#include "fonts/msx_15x16.h"
+#include "fonts/zx_15x16.h"
+
+const uint8_t* font_data[4] = {
+  custom_15x16,
+  c64_15x16,
+  msx_15x16,
+  zx_15x16
+};
+
+#endif
+
 
 //RRRRR GGGGGG BBBBB
 
 #define RGBC(b,g,r)       ( (((r) & 0xF8) << 8) | (((g) & 0xFC) << 3) | ((b) >> 3) )
 
-#include "palette_1.h"  //16 16-bit RGB colors
+#include "fonts/palette_1.h"  //16 16-bit RGB colors
 
 
 volatile uint8_t frame_cnt = 0;
@@ -75,17 +116,26 @@ volatile uint32_t sample_cnt = 0;
 
 #define MAX_PATH          32
 
-#define TEXT_SCREEN_WDT   16
-#define TEXT_SCREEN_HGT   16
+#ifndef USE_240320
 #define CHAR_WDT          8
 #define CHAR_HGT          8
+#define MAX_TEXT_WDT      (128/CHAR_WDT)
+#define MAX_TEXT_HGT      (128/CHAR_HGT)
+#else
+#define CHAR_WDT          15
+#define CHAR_HGT          16
+#define MAX_TEXT_WDT      (240/CHAR_WDT)
+#define MAX_TEXT_HGT      (320/CHAR_HGT)
+#endif
 
 struct {
-  uint8_t text[TEXT_SCREEN_WDT * TEXT_SCREEN_HGT];
-  uint8_t attr[TEXT_SCREEN_WDT * TEXT_SCREEN_HGT];
-  uint8_t text_prev[TEXT_SCREEN_WDT * TEXT_SCREEN_HGT];
-  uint8_t attr_prev[TEXT_SCREEN_WDT * TEXT_SCREEN_HGT];
+  uint8_t text[MAX_TEXT_WDT * MAX_TEXT_HGT];
+  uint8_t attr[MAX_TEXT_WDT * MAX_TEXT_HGT];
+  uint8_t text_prev[MAX_TEXT_WDT * MAX_TEXT_HGT];
+  uint8_t attr_prev[MAX_TEXT_WDT * MAX_TEXT_HGT];
   uint8_t color;
+  uint8_t width;
+  uint8_t height;
   uint16_t palette[16]; //to store a gamma-corrected palette
 } Text;
 
@@ -120,7 +170,7 @@ void set_back_color(uint8_t paper)
 
 void put_char(signed char x, signed char y, char c)
 {
-  int off = y * TEXT_SCREEN_WDT + x;
+  int off = y * Text.width + x;
 
   Text.text[off] = c;
   Text.attr[off] = Text.color;
@@ -128,14 +178,14 @@ void put_char(signed char x, signed char y, char c)
 
 uint8_t get_attr(signed char x, signed char y)
 {
-  int off = y * TEXT_SCREEN_WDT + x;
+  int off = y * Text.width + x;
 
   return Text.attr[off];
 }
 
 void put_attr(signed char x, signed char y, uint8_t attr)
 {
-  int off = y * TEXT_SCREEN_WDT + x;
+  int off = y * Text.width + x;
 
   Text.text[off] |= 0x80;
   Text.attr[off] = attr;
@@ -159,6 +209,8 @@ void put_str(signed char x, signed char y, const char* str)
 
 uint8_t ebt_config_get_font(void);
 
+
+
 void screen_update(void)
 {
   static uint16_t _buf1[CHAR_WDT * CHAR_HGT] __attribute__((aligned(32)));
@@ -169,11 +221,15 @@ void screen_update(void)
 
   //int tiles_rendered = 0;
 
-  for (int cy = 0; cy < TEXT_SCREEN_HGT; ++cy)
+#if defined(USE_LOVYANGFX) || defined(USE_240320)
+  myESPboy.tft.startWrite();
+#endif
+
+  for (int cy = 0; cy < Text.height; ++cy)
   {
-    for (int cx = 0; cx < TEXT_SCREEN_WDT; ++cx)
+    for (int cx = 0; cx < Text.width; ++cx)
     {
-      int ptr = cy * TEXT_SCREEN_WDT + cx;
+      int ptr = cy * Text.width + cx;
 
       if ((Text.text[ptr] != Text.text_prev[ptr]) || (Text.attr[ptr] != Text.attr_prev[ptr])) //only redraw the characters that actually has been changed
       {
@@ -193,14 +249,23 @@ void screen_update(void)
         pap = (pap << 8) | (pap >> 8);
 #endif
 
-        const uint8_t* src = font_data[ebt_config_get_font()] + (sym << 3);
+#ifndef USE_240320
+        int sym_size = 1 * 8;
+#else
+        int sym_size = 2 * 16;
+#endif
+
+		int font_id = ebt_config_get_font();
+        const uint8_t* src = font_data[font_id] + (sym * sym_size);
         uint16_t* dst = render_buf;
 
         for (int py = 0; py < CHAR_HGT; ++py)
         {
-          uint8_t row = pgm_read_byte(src + py);
-
           //unrolled CHAR_WDT loop
+
+#ifndef USE_240320
+
+          uint8_t row = pgm_read_byte(src + py);
 
           *dst++ = row & 0x01 ? ink : pap;
           *dst++ = row & 0x02 ? ink : pap;
@@ -210,6 +275,27 @@ void screen_update(void)
           *dst++ = row & 0x20 ? ink : pap;
           *dst++ = row & 0x40 ? ink : pap;
           *dst++ = row & 0x80 ? ink : pap;
+#else
+
+          uint8_t row1 = pgm_read_byte(src + py * 2 + 0);
+          uint8_t row2 = pgm_read_byte(src + py * 2 + 1);
+
+          *dst++ = row1 & 0x01 ? ink : pap;
+          *dst++ = row1 & 0x02 ? ink : pap;
+          *dst++ = row1 & 0x04 ? ink : pap;
+          *dst++ = row1 & 0x08 ? ink : pap;
+          *dst++ = row1 & 0x10 ? ink : pap;
+          *dst++ = row1 & 0x20 ? ink : pap;
+          *dst++ = row1 & 0x40 ? ink : pap;
+          *dst++ = row1 & 0x80 ? ink : pap;
+          *dst++ = row2 & 0x01 ? ink : pap;
+          *dst++ = row2 & 0x02 ? ink : pap;
+          *dst++ = row2 & 0x04 ? ink : pap;
+          *dst++ = row2 & 0x08 ? ink : pap;
+          *dst++ = row2 & 0x10 ? ink : pap;
+          *dst++ = row2 & 0x20 ? ink : pap;
+          *dst++ = row2 & 0x40 ? ink : pap;
+#endif
         }
 
 #ifdef USE_NBSPI
@@ -224,13 +310,24 @@ void screen_update(void)
 #ifdef USE_NBSPI
         nbSPI_writeBytes((uint8_t*)transfer_buf, CHAR_WDT * CHAR_HGT * sizeof(uint16_t)); //start a new transfer
 #else
+
+#ifdef USE_TFTESPI
         myESPboy.tft.pushColors(transfer_buf, CHAR_WDT * CHAR_HGT);
+#endif
+#if defined(USE_LOVYANGFX) || defined(USE_240320)
+        myESPboy.tft.pushPixels(transfer_buf, CHAR_WDT * CHAR_HGT);
+#endif
+
 #endif
 
         //++tiles_rendered;
       }
     }
   }
+
+#if defined(USE_LOVYANGFX) || defined(USE_240320)
+  myESPboy.tft.endWrite();
+#endif
 
   //if (tiles_rendered) Serial.println(tiles_rendered);
 }
@@ -241,10 +338,15 @@ void sound_output_init(void);
 void sound_output_shut(void);
 
 #include "ebt_input.h"
+#include "ebt_vars.h"
+#include "ebt_osd.h"
 #include "ebt_main.h"
 #include "ebt_file.h"
+#include "ebt_song.h"
 #include "ebt_load_save.h"
+#include "ebt_export.h"
 #include "ebt_edit_config.h"
+#include "ebt_synth.h"
 #include "ebt_player.h"
 #include "ebt_vumeter.h"
 #include "ebt_dlg_confirm.h"
@@ -423,9 +525,13 @@ void setup()
   myESPboy.begin("ESPboy tracker");
   hasDAC = myESPboy.mcp.writeDAC(4096, false);  //if present, DAC controls the display backlight brightness
 
+  printf("RAM at power up %i bytes\n", ESP.getFreeHeap());
+  
   memset(&Text.text, 0, sizeof(Text.text));
   memset(&Text.attr, 0, sizeof(Text.attr));
   Text.color = 0;
+  Text.width = MAX_TEXT_WDT;
+  Text.height = MAX_TEXT_HGT;
 
   //convert palette with gamma-correction applied (important for low quality TFT screens)
 
@@ -460,6 +566,8 @@ void setup()
   printf("sound_output_init\n");
 
   sound_output_init();
+
+  printf("RAM before entering work mode %i bytes\n", ESP.getFreeHeap());
 }
 
 
@@ -468,8 +576,9 @@ void loop()
 {
   while (ebt_is_active())
   {
-    ebt_input_update(myESPboy.getKeys());
-
+    ebt_input_update_pad(myESPboy.getKeys());
+    ebt_input_update_kb(KB_NONE); //for physical keyboard
+ 
     ebt_update();
     screen_update();
 

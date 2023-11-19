@@ -31,16 +31,17 @@ void ebt_edit_instrument_draw(void)
 
 	snprintf(buf, sizeof(buf), "INST%2.2X", cur_ins);
 
-	put_header(buf, COL_HEAD_INS);
+	ebt_put_header(buf, COL_HEAD_INS);
 
 	const char* wave_names[SYNTH_WAVEFORMS_MAX] = {
-		"P50%","P32%","P25%","P19%","P12%","P06%",
-		"SWPF","SWPS","SWLO","SWHI",
-		"DSS-","DSS+","DSF-",
-		"VOW1","VOW2","VOW3","VOW4","VOW5","VOW6",
-		"RSP1","RSP2",
-		"PHT1","PHT2","PHT3","PHT4","PHT5","PHT6","PHT7",
-		"NSE1","NSE2","NSE3","NSE4"
+		"P50%","P32%","P25%","P19%","P12%","P06%","SWPF","SWPS",
+		"SWLO","SWHI","DSS-","DSS+","DSF-","VOW1","VOW2","VOW3",
+		"VOW4","VOW5","VOW6","RSP1","RSP2","PHT1","PHT2","PHT3",
+		"PHT4","PHT5","PHT6","PHT7","NSE1","NSE2","NSE3","NSE4",
+		"ADSL","ADSH","ADSO","APH1","APH2","HARM","FPLS","FPLO",
+		"SPLS","SPLO","SPLA","HPT1","HPT2","DRTY","PNS1","PNS2",
+		"MTLC","WNS1","WNS2","WNS3","WNS4","LNS1","LNS2","LNS3",
+		"LNS4","HNS1","HNS2","HNS3","HNS4","MOD1","MOD2","MOD3",
 	};
 
 	instrument_struct* is = &song->ins[cur_ins];
@@ -288,24 +289,22 @@ void ebt_edit_instrument_update(void)
 			}
 		}
 	}
-	else
-	{
-		instrument_struct* is = &song->ins[cur_ins];
 
-		switch (ebt_ins_item)
-		{
-		case INS_ITEM_WAVE: ebt_change_param_u8(&is->wave, pad_r, 0, 0, SYNTH_WAVEFORMS_MAX - 1, 16); break;
-		case INS_ITEM_VOLUME: ebt_change_param_u8(&is->volume, pad_r, DEFAULT_VOLUME, 1, 4, 16); break;
-		case INS_ITEM_OCTAVE: ebt_change_param_i8(&is->octave, pad_r, 0, -10, 10, 1, FALSE); break;
-		case INS_ITEM_DETUNE: ebt_change_param_i8(&is->detune, pad_r, 0, -127, 127, 16, FALSE); break;
-		case INS_ITEM_SLIDE: ebt_change_param_i8(&is->slide, pad_r, 0, -127, 127, 16, FALSE); break;
-		case INS_ITEM_VIBRATO_DELAY: ebt_change_param_u8(&is->mod_delay, pad_r, 0, 0, 255, 16); break;
-		case INS_ITEM_VIBRATO_SPEED: ebt_change_param_u8(&is->mod_speed, pad_r, 0, 0, 255, 16); break;
-		case INS_ITEM_VIBRATO_DEPTH: ebt_change_param_u8(&is->mod_depth, pad_r, 0, 0, 255, 16); break;
-		case INS_ITEM_CUT_TIME: ebt_change_param_u8(&is->cut_time, pad_r, 0, 0, 255, 16); break;
-		case INS_ITEM_FIXED_PITCH: ebt_change_param_u8(&is->fixed_pitch, pad_r, 0, 0, 1, 1); break;
-		case INS_ITEM_BASE_NOTE: ebt_change_param_u8(&is->base_note, pad_r, DEFAULT_BASE_NOTE, 12, 12 * 10 - 1, 12); break;
-		}
+	instrument_struct* is = &song->ins[cur_ins];
+
+	switch (ebt_ins_item)
+	{
+	case INS_ITEM_WAVE: ebt_change_param_u8(&is->wave, pad, pad_r, 0, 0, SYNTH_WAVEFORMS_MAX - 1, 16); break;
+	case INS_ITEM_VOLUME: ebt_change_param_u8(&is->volume, pad, pad_r, DEFAULT_VOLUME, 1, 4, 16); break;
+	case INS_ITEM_OCTAVE: ebt_change_param_i8(&is->octave, pad, pad_r, 0, -10, 10, 1, FALSE); break;
+	case INS_ITEM_DETUNE: ebt_change_param_i8(&is->detune, pad, pad_r, 0, -127, 127, 16, FALSE); break;
+	case INS_ITEM_SLIDE: ebt_change_param_i8(&is->slide, pad, pad_r, 0, -127, 127, 16, FALSE); break;
+	case INS_ITEM_VIBRATO_DELAY: ebt_change_param_u8(&is->mod_delay, pad, pad_r, 0, 0, 255, 16); break;
+	case INS_ITEM_VIBRATO_SPEED: ebt_change_param_u8(&is->mod_speed, pad, pad_r, 0, 0, 255, 16); break;
+	case INS_ITEM_VIBRATO_DEPTH: ebt_change_param_u8(&is->mod_depth, pad, pad_r, 0, 0, 255, 16); break;
+	case INS_ITEM_CUT_TIME: ebt_change_param_u8(&is->cut_time, pad, pad_r, 0, 0, 255, 16); break;
+	case INS_ITEM_FIXED_PITCH: ebt_change_param_u8(&is->fixed_pitch, pad, pad_r, 0, 0, 1, 1); break;
+	case INS_ITEM_BASE_NOTE: ebt_change_param_note(&is->base_note, pad, pad_r); break;
 	}
 
 	if (pad_t&PAD_ACT)

@@ -104,14 +104,14 @@ void ebt_edit_info_draw(void)
 {
 	char buf[16];
 
-	put_header("INFO", COL_HEAD_INFO);
+	ebt_put_header("INFO", COL_HEAD_INFO);
 
 	set_font_color(COL_TEXT_DARK);
 	set_back_color(COL_BACK);
 
 	snprintf(buf, sizeof(buf), "%i/%i", info_page_num + 1, info_pages_all);
 
-	put_str((signed char)(TEXT_SCREEN_WDT - strlen(buf)), 0, buf);
+	put_str((signed char)(Text.width - strlen(buf)), 0, buf);
 
 	const char** str_array = info_pages[info_page_num];
 	int id = 0;
@@ -151,7 +151,7 @@ void ebt_edit_info_draw(void)
 				continue;
 			}
 
-			if (tx >= 0 && tx < TEXT_SCREEN_WDT&&ty >= 0 && ty < TEXT_SCREEN_HGT)
+			if (tx >= 0 && tx < Text.width&&ty >= 0 && ty < Text.height)
 			{
 				put_char(tx, ty, c);
 			}

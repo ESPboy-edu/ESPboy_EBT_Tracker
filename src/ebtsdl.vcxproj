@@ -105,11 +105,16 @@
     <ClInclude Include="ESPboy_EBT\ebt_edit_order.h" />
     <ClInclude Include="ESPboy_EBT\ebt_edit_pattern.h" />
     <ClInclude Include="ESPboy_EBT\ebt_edit_song.h" />
+    <ClInclude Include="ESPboy_EBT\ebt_export.h" />
     <ClInclude Include="ESPboy_EBT\ebt_file.h" />
     <ClInclude Include="ESPboy_EBT\ebt_input.h" />
     <ClInclude Include="ESPboy_EBT\ebt_load_save.h" />
     <ClInclude Include="ESPboy_EBT\ebt_main.h" />
+    <ClInclude Include="ESPboy_EBT\ebt_osd.h" />
     <ClInclude Include="ESPboy_EBT\ebt_player.h" />
+    <ClInclude Include="ESPboy_EBT\ebt_song.h" />
+    <ClInclude Include="ESPboy_EBT\ebt_synth.h" />
+    <ClInclude Include="ESPboy_EBT\ebt_vars.h" />
     <ClInclude Include="ESPboy_EBT\ebt_vumeter.h" />
   </ItemGroup>
   <ItemGroup>

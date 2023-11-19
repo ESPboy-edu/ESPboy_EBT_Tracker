@@ -1,7 +1,7 @@
 short int cur_file = 0;
 short int cur_files_all = 0;
 
-#define FILE_LIST_HGT		(TEXT_SCREEN_HGT-3)
+#define FILE_LIST_HGT		(MAX_TEXT_HGT-3)
 #define MAX_FILENAME_LEN	32
 
 char ebt_file_list_buf[FILE_LIST_HGT][MAX_FILENAME_LEN];
@@ -59,7 +59,7 @@ void ebt_file_browser_update_list(int from_file)
 {
   DIR* dp = opendir(dataDirectory);
 
-  for (int i = 0; i < FILE_LIST_HGT; ++i) ebt_file_list_buf[i][0] = 0;
+  for (int i = 0; i < (Text.height - 3); ++i) ebt_file_list_buf[i][0] = 0;
 
   if (dp)
   {
@@ -172,7 +172,7 @@ void ebt_file_browser_update_list(int from_file)
 
   fs::File file = LittleFS.open(TEMP_FILE_CACHE_NAME, "r");
 
-  for (int i = 0; i < FILE_LIST_HGT; ++i) ebt_file_list_buf[i][0] = 0;
+  for (int i = 0; i < (Text.height - 3); ++i) ebt_file_list_buf[i][0] = 0;
 
   int file_cnt = 0;
 
@@ -262,13 +262,13 @@ void ebt_file_browser_draw(void)
 {
   char buf[16];
 
-  put_header("FILE", COL_HEAD_FILE);
+  ebt_put_header("FILE", COL_HEAD_FILE);
 
   if (ebt_file_dlg_name)
   {
     set_font_color(COL_TEXT_DARK);
     set_back_color(COL_BACK);
-	put_str(TEXT_SCREEN_WDT - (signed char)strlen(ebt_file_dlg_name), 0, ebt_file_dlg_name);
+	put_str(Text.width - (signed char)strlen(ebt_file_dlg_name), 0, ebt_file_dlg_name);
   }
 
   int from_file = ebt_file_browser_from_file();
@@ -290,10 +290,10 @@ void ebt_file_browser_draw(void)
   {
     snprintf(buf, sizeof(buf), "%i/%i", (cur_file + 1), cur_files_all);
 
-    put_str((signed char)(TEXT_SCREEN_WDT - strlen(buf)), TEXT_SCREEN_HGT - 1, buf);
+    put_str((signed char)(Text.width - strlen(buf)), Text.height - 1, buf);
   }
 
-  for (int i = 0; i < FILE_LIST_HGT; ++i)
+  for (int i = 0; i < (Text.height - 3); ++i)
   {
     ebt_item_color(from_file == cur_file);
 
@@ -307,7 +307,7 @@ void ebt_file_browser_draw(void)
     set_font_color(COL_TEXT_DARK);
     set_back_color(COL_BACK);
 
-    put_str(4, TEXT_SCREEN_HGT / 2, "NO FILES");
+    put_str(4, Text.height / 2, "NO FILES");
   }
 }
 
