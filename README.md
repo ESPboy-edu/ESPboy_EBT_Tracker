@@ -11,26 +11,27 @@ EBT is a tiny, minimalistic, yet quite powerful chiptune-like music editor with 
 The source code is portable, so it may be available on other platforms as well. Currently it features an SDL port, so it can run on a regular desktop PC as well, sharing the same data format, so the song and instrument files are easily transferable between the devices.
 
 
-# EBT v1.1 Software chiptune-like sound synthesis engine features:
+# v1.1 features
 
-● 4 channels polyphony
-● Speed control with an automatic shuffle
-● Up to 128 order list positions with per-pattern transpose support
-● Up to 128 instruments controlled via simple set of parameters
-○ 64 waveforms
-○ 4 volume levels
-○ Slide up/down and modulation (vibrato) effects
-○ Fixed pitch option
-● Up to 160 single-channel patterns
-● Up to 32 rows per pattern
-● Up to 2 effects per a pattern row
-○ Arpeggio with variable speed
-○ Slides up and down
-○ Portamento (slide to a note)
-○ Waveform and phase control
-○ Speed control
-● Stereo support
-● A range of sound output devices supported
+- Added EBT tracks player (Arduino IDE source code) and "export to C array" option, so you can play EBT tracks in your own projects
+- 4 channels polyphony
+- Speed control with an automatic shuffle
+- Up to 128 order list positions with per-pattern transpose support
+- Up to 128 instruments controlled via simple set of parameters
+    - 64 waveforms
+    - 4 volume levels
+    - Slide up/down and modulation (vibrato) effects
+    - Fixed pitch option
+- Up to 160 single-channel patterns
+- Up to 32 rows per pattern
+- Up to 2 effects per a pattern row
+    - Arpeggio with variable speed
+    - Slides up and down
+    - Portamento (slide to a note)
+    - Waveform and phase control
+    - Speed control
+- Stereo support
+- A range of sound output devices supported
 
 
 ![ESPboy2 EBT Tracker pic](https://github.com/ESPboy-edu/ESPboy_EBT_Tracker/blob/main/ESPboy2_EBT_Tracker_look.png?raw=true)
