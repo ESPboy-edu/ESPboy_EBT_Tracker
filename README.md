@@ -14,6 +14,7 @@ The source code is portable, so it may be available on other platforms as well. 
 # v1.1 features
 
 - Added EBT tracks player (Arduino IDE source code) and "export to C array" option, so you can play EBT tracks in your own projects
+- 4 demo melodies in the pack
 - 4 channels polyphony
 - Speed control with an automatic shuffle
 - Up to 128 order list positions with per-pattern transpose support
