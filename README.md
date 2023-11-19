@@ -30,7 +30,6 @@ The source code is portable, so it may be available on other platforms as well. 
 - Stereo support
 - A range of sound output devices supported
 
-# EBT v1.1 improvements
 
 # EBT v1.1 improvements
 - Play option removed from SONG screen
