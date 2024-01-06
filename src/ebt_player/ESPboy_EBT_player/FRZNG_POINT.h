@@ -98,7 +98,7 @@ const uint8_t ords_FRZNG_POINT[] PROGMEM ={
 };
 
 
-const uint8_t ins_FRZNG_POINT_0[] PROGMEM ={
+const uint8_t ins_FRZNG_POINT_0[] PROGMEM ={ //
 0x00,
 0x04,
 0x00,
@@ -110,10 +110,12 @@ const uint8_t ins_FRZNG_POINT_0[] PROGMEM ={
 0x00,
 0x00,
 0x24,
+0x00,
+0x00,
 };
 
 
-const uint8_t ins_FRZNG_POINT_1[] PROGMEM ={
+const uint8_t ins_FRZNG_POINT_1[] PROGMEM ={ //
 0x02,
 0x04,
 0x00,
@@ -125,10 +127,12 @@ const uint8_t ins_FRZNG_POINT_1[] PROGMEM ={
 0x00,
 0x00,
 0x24,
+0x00,
+0x00,
 };
 
 
-const uint8_t ins_FRZNG_POINT_2[] PROGMEM ={
+const uint8_t ins_FRZNG_POINT_2[] PROGMEM ={ //
 0x03,
 0x04,
 0x00,
@@ -140,10 +144,12 @@ const uint8_t ins_FRZNG_POINT_2[] PROGMEM ={
 0x00,
 0x00,
 0x24,
+0x00,
+0x00,
 };
 
 
-const uint8_t ins_FRZNG_POINT_3[] PROGMEM ={
+const uint8_t ins_FRZNG_POINT_3[] PROGMEM ={ //
 0x04,
 0x04,
 0x00,
@@ -155,10 +161,12 @@ const uint8_t ins_FRZNG_POINT_3[] PROGMEM ={
 0x00,
 0x00,
 0x24,
+0x00,
+0x00,
 };
 
 
-const uint8_t ins_FRZNG_POINT_4[] PROGMEM ={
+const uint8_t ins_FRZNG_POINT_4[] PROGMEM ={ //
 0x05,
 0x04,
 0x00,
@@ -170,10 +178,12 @@ const uint8_t ins_FRZNG_POINT_4[] PROGMEM ={
 0x00,
 0x00,
 0x24,
+0x00,
+0x00,
 };
 
 
-const uint8_t ins_FRZNG_POINT_5[] PROGMEM ={
+const uint8_t ins_FRZNG_POINT_5[] PROGMEM ={ //
 0x07,
 0x04,
 0x00,
@@ -185,10 +195,12 @@ const uint8_t ins_FRZNG_POINT_5[] PROGMEM ={
 0x00,
 0x00,
 0x24,
+0x00,
+0x00,
 };
 
 
-const uint8_t ins_FRZNG_POINT_6[] PROGMEM ={
+const uint8_t ins_FRZNG_POINT_6[] PROGMEM ={ //
 0x08,
 0x04,
 0x00,
@@ -200,10 +212,12 @@ const uint8_t ins_FRZNG_POINT_6[] PROGMEM ={
 0x00,
 0x00,
 0x24,
+0x00,
+0x00,
 };
 
 
-const uint8_t ins_FRZNG_POINT_7[] PROGMEM ={
+const uint8_t ins_FRZNG_POINT_7[] PROGMEM ={ //
 0x09,
 0x04,
 0x00,
@@ -215,10 +229,12 @@ const uint8_t ins_FRZNG_POINT_7[] PROGMEM ={
 0x00,
 0x00,
 0x24,
+0x00,
+0x00,
 };
 
 
-const uint8_t ins_FRZNG_POINT_8[] PROGMEM ={
+const uint8_t ins_FRZNG_POINT_8[] PROGMEM ={ //
 0x0b,
 0x04,
 0x00,
@@ -230,10 +246,12 @@ const uint8_t ins_FRZNG_POINT_8[] PROGMEM ={
 0x00,
 0x00,
 0x24,
+0x00,
+0x00,
 };
 
 
-const uint8_t ins_FRZNG_POINT_9[] PROGMEM ={
+const uint8_t ins_FRZNG_POINT_9[] PROGMEM ={ //
 0x17,
 0x04,
 0x00,
@@ -245,10 +263,12 @@ const uint8_t ins_FRZNG_POINT_9[] PROGMEM ={
 0x00,
 0x00,
 0x24,
+0x00,
+0x00,
 };
 
 
-const uint8_t ins_FRZNG_POINT_10[] PROGMEM ={
+const uint8_t ins_FRZNG_POINT_10[] PROGMEM ={ //
 0x1b,
 0x04,
 0x00,
@@ -260,10 +280,12 @@ const uint8_t ins_FRZNG_POINT_10[] PROGMEM ={
 0x00,
 0x00,
 0x24,
+0x00,
+0x00,
 };
 
 
-const uint8_t ins_FRZNG_POINT_11[] PROGMEM ={
+const uint8_t ins_FRZNG_POINT_11[] PROGMEM ={ //
 0x1c,
 0x04,
 0x00,
@@ -275,10 +297,12 @@ const uint8_t ins_FRZNG_POINT_11[] PROGMEM ={
 0x00,
 0x00,
 0x24,
+0x00,
+0x00,
 };
 
 
-const uint8_t ins_FRZNG_POINT_12[] PROGMEM ={
+const uint8_t ins_FRZNG_POINT_12[] PROGMEM ={ //
 0x1d,
 0x04,
 0x00,
@@ -290,10 +314,12 @@ const uint8_t ins_FRZNG_POINT_12[] PROGMEM ={
 0x00,
 0x00,
 0x24,
+0x00,
+0x00,
 };
 
 
-const uint8_t ins_FRZNG_POINT_13[] PROGMEM ={
+const uint8_t ins_FRZNG_POINT_13[] PROGMEM ={ //
 0x00,
 0x04,
 0x00,
@@ -305,10 +331,12 @@ const uint8_t ins_FRZNG_POINT_13[] PROGMEM ={
 0x06,
 0x01,
 0x2b,
+0x00,
+0x00,
 };
 
 
-const uint8_t ins_FRZNG_POINT_14[] PROGMEM ={
+const uint8_t ins_FRZNG_POINT_14[] PROGMEM ={ //
 0x1c,
 0x04,
 0x00,
@@ -320,6 +348,8 @@ const uint8_t ins_FRZNG_POINT_14[] PROGMEM ={
 0x02,
 0x01,
 0x48,
+0x00,
+0x00,
 };
 
 

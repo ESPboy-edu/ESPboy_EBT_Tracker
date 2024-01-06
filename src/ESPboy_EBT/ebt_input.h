@@ -62,14 +62,15 @@ enum {
 	KB_Y,
 	KB_Z,
 	KB_MINUS,
-	KB_BACKSPACE,
-	KB_INSERT,
 	KB_DELETE,
+	KB_INSERT,
+	KB_BACKSPACE,
 	KB_HOME,
 	KB_END,
 	KB_PGUP,
 	KB_PGDOWN,
-	KB_TAB
+	KB_TAB,
+	KB_UNDO
 };
 
 
@@ -149,9 +150,18 @@ uint8_t ebt_input_get_repeat(void)	//trigger with autorepeat
 
 
 
+BOOL ebt_config_get_full_kb(void);
+
 void ebt_input_update_kb(uint8_t kb_code)
 {
-	Input.kb_buf = kb_code;
+	if (ebt_config_get_full_kb())
+	{
+		Input.kb_buf = kb_code;
+	}
+	else
+	{
+		Input.kb_buf = 0;
+	}
 }
 
 

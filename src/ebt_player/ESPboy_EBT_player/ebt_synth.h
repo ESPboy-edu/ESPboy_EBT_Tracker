@@ -1,4 +1,4 @@
-#define SYNTH_CHANNELS		4
+#define SYNTH_CHANNELS		8
 #define SYNTH_FRAME_RATE	240	//how often internal synth updates (slide, vibrato, etc) are performed
 
 #define SYNTH_WAVEFORMS_MAX	64
@@ -21,12 +21,18 @@ struct synth_channel_struct {
 	int32_t mod_depth;
 	int32_t mod_delay;
 	int16_t duration;
+	uint8_t base_note;
+	uint8_t fix_pitch;
+	int8_t offset;				//in semitones
+	int8_t detune;
 	uint8_t volume;				//original instrument volume
 	uint8_t volume_l;			//0..4 multipliers calculated from pan
 	uint8_t volume_r;			//0..4
 	uint8_t wave;			//00..1f
 	uint8_t acc_phase_reset;
 	uint8_t running;		//set while the sound is produced
+	uint8_t output;
+	uint8_t aux_mix;
 };
 
 struct synth_struct {
@@ -82,6 +88,12 @@ const int8_t ebt_synth_sine[256] = {
 
 synth_struct synth;
 
+enum {
+	SYNTH_MIX_ADD = 0,
+	SYNTH_MIX_SUB,
+	SYNTH_MIX_NONE
+};
+
 
 
 void ebt_synth_reset(void)
@@ -107,13 +119,6 @@ void ebt_synth_init(int32_t sample_rate)
 
 	synth.frame_acc = 0;
 	synth.frame_add = 0x10000 * SYNTH_FRAME_RATE / sample_rate;
-}
-
-
-
-int16_t ebt_synth_octave_note_to_pitch16(uint8_t octave, uint8_t note, int8_t cent)
-{
-	return ((octave * 12 + note) << 8) + (cent * 2);
 }
 
 
@@ -167,6 +172,16 @@ uint32_t ebt_synth_pitch32_to_add32(int32_t pitch32)
 
 void ebt_synth_set_pitch16(uint8_t ch, int16_t pitch16)
 {
+	synth_channel_struct* scs = &synth.chn[ch];
+
+	if (scs->fix_pitch)
+	{
+		pitch16 = scs->base_note << 8;
+	}
+
+	pitch16 += scs->offset << 8;
+	pitch16 += scs->detune * 2;
+
 	synth.chn[ch].base_pitch = pitch16 << 8;
 }
 
@@ -186,6 +201,14 @@ void ebt_synth_set_volume(uint8_t ch, uint8_t volume)
 	synth.chn[ch].volume = volume;
 }
 
+
+
+int ebt_synth_get_volume(uint8_t ch)
+{
+	if (!synth.chn[ch].running) return 0;
+
+	return synth.chn[ch].volume;
+}
 
 
 
@@ -221,7 +244,7 @@ void ebt_synth_set_pan(uint8_t ch, uint8_t pan)
 
 
 
-void ebt_synth_start(uint8_t ch, uint8_t wave, uint8_t volume, int8_t slide, uint8_t cut_time, uint8_t mod_delay, uint8_t mod_speed, uint8_t mod_depth, uint8_t fix_pitch, uint8_t base_note)
+void ebt_synth_start(uint8_t ch, uint8_t wave, uint8_t volume, int8_t offset, int8_t detune, int8_t slide, uint8_t cut_time, uint8_t mod_delay, uint8_t mod_speed, uint8_t mod_depth, uint8_t fix_pitch, uint8_t base_note, uint8_t aux_mix)
 {
 	synth_channel_struct* scs = &synth.chn[ch];
 
@@ -235,6 +258,11 @@ void ebt_synth_start(uint8_t ch, uint8_t wave, uint8_t volume, int8_t slide, uin
 	scs->mod_ptr_delta = mod_speed << 13;
 	scs->mod_depth = mod_depth << 4;
 	scs->mod_delay = mod_delay << 2;
+	scs->offset = offset;
+	scs->detune = detune;
+	scs->fix_pitch = fix_pitch;
+	scs->base_note = base_note;
+	scs->aux_mix = aux_mix;
 
 	scs->running = TRUE;
 }
@@ -306,9 +334,9 @@ void ebt_synth_frame_update(void)
 
 void ebt_synth_render_sample(stereo_sample_struct* output)
 {
-	int mod_l = (synth.mod_acc >> 9) & 255;
-	int mod_h = (synth.mod_acc >> 11) & 255;
-
+	uint8_t mod_l = (synth.mod_acc >> 9) & 0xff;
+	uint8_t mod_h = (synth.mod_acc >> 11) & 0xff;
+	
 	synth.mod_acc += synth.mod_add;
 
 	for (int ch = 0; ch < SYNTH_CHANNELS; ++ch)
@@ -745,10 +773,25 @@ void ebt_synth_render_sample(stereo_sample_struct* output)
 			scs->acc = (scs->acc & ~(0xff << (SYNTH_ACC_PRECISION + 8))) | (h << (SYNTH_ACC_PRECISION + 8));
 		}
 
-		if (a & 0x10)
+		scs->output = a & 0x10;
+
+		if (ch < (SYNTH_CHANNELS / 2))	//output only first half of the channels, pair them with the extra four if needed
 		{
-			output->l += (scs->volume*scs->volume_l) / 4;
-			output->r += (scs->volume*scs->volume_r) / 4;
+			int16_t volume = 0;
+
+			if (scs->output) volume = scs->volume;
+
+			switch(scs->aux_mix)
+			{
+			case SYNTH_MIX_ADD: if (synth.chn[ch + 4].output) volume += synth.chn[ch + 4].volume; break;
+			case SYNTH_MIX_SUB: if (synth.chn[ch + 4].output) volume -= synth.chn[ch + 4].volume; break;
+			}
+
+			if (volume < 0) volume = 0;
+			if (volume > 4) volume = 4;
+
+			output->l += (volume*scs->volume_l) / 4;
+			output->r += (volume*scs->volume_r) / 4;
 		}
 	}
 

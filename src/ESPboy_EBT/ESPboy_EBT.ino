@@ -193,7 +193,7 @@ void put_attr(signed char x, signed char y, uint8_t attr)
 
 void put_str(signed char x, signed char y, const char* str)
 {
-  if (y < 0 || y >= 16) return;
+  if (y < 0 || y >= Text.height) return;
 
   while (x < 16)
   {

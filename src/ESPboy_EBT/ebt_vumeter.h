@@ -37,9 +37,12 @@ void ebt_vumeter_update(void)
 {
 	for (int ch = 0; ch < MAX_CHANNELS; ++ch)
 	{
-		if (player.active&&synth.chn[ch].running)
+		int volume = ebt_synth_get_volume(ch + 0) + ebt_synth_get_volume(ch + 4);
+
+		if (player.active&&volume > 0)
 		{
-			vu_meter_level[ch] = synth.chn[ch].volume << 4;
+			if (volume > 4) volume = 4;
+			vu_meter_level[ch] = volume << 4;
 		}
 		else
 		{

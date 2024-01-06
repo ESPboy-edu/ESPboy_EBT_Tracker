@@ -8,8 +8,12 @@ struct config_struct {
 	uint8_t ptn_sound_type;
 	uint8_t ptn_sound_len;
 	uint8_t swap_lft_rgt;
+	uint8_t auto_load;
+	uint8_t hints;
+	uint8_t backup;
 #ifdef TARGET_SDL
 	uint8_t video_mode;
+	uint8_t full_kb;
 #endif
 };
 
@@ -28,6 +32,10 @@ enum {
 	CFG_ITEM_PTN_SOUND_TYPE,
 	CFG_ITEM_PTN_SOUND_LEN,
 	CFG_ITEM_SWAP_LFT_RGT,
+	CFG_ITEM_AUTO_LOAD,
+	CFG_ITEM_HINTS,
+	CFG_ITEM_BACKUP,
+	CFG_ITEM_FILE_MANAGER,
 	CFG_ITEM_WIFI_AP,
 	CFG_ITEMS_ALL
 };
@@ -51,6 +59,11 @@ enum {
 	CFG_ITEM_PTN_SOUND_TYPE,
 	CFG_ITEM_PTN_SOUND_LEN,
 	CFG_ITEM_SWAP_LFT_RGT,
+	CFG_ITEM_AUTO_LOAD,
+	CFG_ITEM_HINTS,
+	CFG_ITEM_BACKUP, 
+	CFG_ITEM_FULL_KB,
+	CFG_ITEM_FILE_MANAGER,
 	CFG_ITEMS_ALL
 };
 
@@ -123,6 +136,12 @@ void ebt_config_set_default(void)
 	config.ord_highlight = 1;
 	config.ptn_sound_type = CFG_SOUND_TYPE_CHANGE;
 	config.i2s_volume = 9;
+	config.auto_load = TRUE;
+	config.hints = TRUE;
+	config.backup = TRUE;
+#ifdef TARGET_SDL
+	config.full_kb = 1;
+#endif
 
 	memcpy(&config_prev, &config, sizeof(config_prev));
 
@@ -152,9 +171,14 @@ void ebt_config_load(void)
 		if (ebt_parse_tag(line, "pl")) config.ptn_sound_len = param;
 		if (ebt_parse_tag(line, "iv")) config.i2s_volume = param;
 		if (ebt_parse_tag(line, "sw")) config.swap_lft_rgt = param;
+		if (ebt_parse_tag(line, "al")) config.auto_load = param;
+		if (ebt_parse_tag(line, "hi")) config.hints = param;
+		if (ebt_parse_tag(line, "bu")) config.backup = param;
 #ifdef TARGET_SDL
 		if (ebt_parse_tag(line, "vm")) config.video_mode = param;
+		if (ebt_parse_tag(line, "kb")) config.full_kb = param;
 #endif
+		if (ebt_parse_tag(line, "sn")) ebt_song_set_last_name(line + 2);
 	}
 
 	ebt_file_close();
@@ -166,9 +190,9 @@ void ebt_config_load(void)
 
 
 
-void ebt_config_save(void)
+void ebt_config_save(uint8_t force)
 {
-	if (memcmp(&config, &config_prev, sizeof(config)) == 0) return; //no changes in the config, no need to save
+	if (!force && (memcmp(&config, &config_prev, sizeof(config)) == 0)) return; //no changes in the config, no need to save
 
 	if (!ebt_file_open(FILE_NAME_CFG, TRUE)) return;
 
@@ -181,9 +205,17 @@ void ebt_config_save(void)
 	ebt_file_put_line(ebt_make_hex8("pl", config.ptn_sound_len));
 	ebt_file_put_line(ebt_make_hex8("iv", config.i2s_volume));
 	ebt_file_put_line(ebt_make_hex8("sw", config.swap_lft_rgt));
+	ebt_file_put_line(ebt_make_hex8("al", config.auto_load));
+	ebt_file_put_line(ebt_make_hex8("hi", config.hints));
+	ebt_file_put_line(ebt_make_hex8("bu", config.backup));
 #ifdef TARGET_SDL
 	ebt_file_put_line(ebt_make_hex8("vm", config.video_mode));
+	ebt_file_put_line(ebt_make_hex8("kb", config.full_kb));
 #endif
+
+	char buf[MAX_PATH];
+	snprintf(buf, sizeof(buf), "sn%s", ebt_song_get_last_name());
+	ebt_file_put_line(buf);
 
 	ebt_file_close();
 
@@ -229,6 +261,31 @@ uint8_t ebt_config_get_ord_highlight(void)
 BOOL ebt_config_get_swap_lft_rgt(void)
 {
 	return config.swap_lft_rgt;
+}
+
+
+
+BOOL ebt_config_get_full_kb(void)
+{
+#ifdef TARGET_SDL
+	return config.full_kb;
+#else
+	return 0;
+#endif
+}
+
+
+
+BOOL ebt_config_get_auto_load(void)
+{
+	return config.auto_load;
+}
+
+
+
+BOOL ebt_config_get_backup(void)
+{
+	return config.backup;
 }
 
 
@@ -405,14 +462,64 @@ void ebt_edit_config_draw(void)
 	set_font_color(COL_TEXT_DARK);
 	set_back_color(COL_BACK);
 	put_str(1, sy, "SWP LR");
-
+	
 	ebt_item_color(config_cur == CFG_ITEM_SWAP_LFT_RGT);
 
 	put_str(8, sy, config.swap_lft_rgt ? "YES" : "NO");
 
-	sy += 2;
+	++sy;
 
+	set_font_color(COL_TEXT_DARK);
+	set_back_color(COL_BACK);
+	put_str(1, sy, "AUTOLD");
+
+	ebt_item_color(config_cur == CFG_ITEM_AUTO_LOAD);
+
+	put_str(8, sy, config.auto_load ? "YES" : "NO");
+
+	++sy;
+
+	set_font_color(COL_TEXT_DARK);
+	set_back_color(COL_BACK);
+	put_str(1, sy, "HINTS");
+
+	ebt_item_color(config_cur == CFG_ITEM_HINTS);
+
+	put_str(8, sy, config.hints ? "YES" : "NO");
+
+	++sy;
+
+	set_font_color(COL_TEXT_DARK);
+	set_back_color(COL_BACK);
+	put_str(1, sy, "BACKUP");
+
+	ebt_item_color(config_cur == CFG_ITEM_BACKUP);
+
+	put_str(8, sy, config.backup ? "YES" : "NO");
+
+#ifdef TARGET_SDL
+
+	++sy;
+
+	set_font_color(COL_TEXT_DARK);
+	set_back_color(COL_BACK);
+	put_str(1, sy, "FULLKB");
+
+	ebt_item_color(config_cur == CFG_ITEM_FULL_KB);
+
+	put_str(8, sy, config.full_kb ? "YES" : "NO");
+
+#endif
+
+	++sy;
+
+	ebt_item_color(config_cur == CFG_ITEM_FILE_MANAGER);
+
+	put_str(1, sy, "FMAN");
+	
 #ifndef TARGET_SDL
+
+	++sy;
 
 	ebt_item_color(config_cur == CFG_ITEM_WIFI_AP);
 
@@ -425,6 +532,7 @@ void ebt_edit_config_draw(void)
 
 void ebt_edit_config_wifi_ap_ok(void)
 {
+	ebt_song_backup();
 	ebt_stop();
 }
 
@@ -458,21 +566,24 @@ void ebt_edit_config_update(void)
 		if (pad_r & PAD_UP) ebt_edit_config_move_cur(-1);
 		if (pad_r & PAD_DOWN) ebt_edit_config_move_cur(1);
 
-		ebt_config_save();	//does not save if there was no changes, so it safe to call it every frame
+		ebt_config_save(FALSE);	//does not save if there was no changes, so it safe to call it every frame
 	}
 	else
 	{
-#ifndef TARGET_SDL
 		switch (config_cur)
 		{
+#ifndef TARGET_SDL
 		case CFG_ITEM_WIFI_AP:
 			if (pad_t & PAD_ACT)
 			{
 				ebt_ask_confirm("SURE?", ebt_edit_config_wifi_ap_ok, NULL);
 			}
 			break;
-		}
 #endif
+		case CFG_ITEM_FILE_MANAGER:
+			ebt_file_manager();
+			break;
+		}
 	}
 
 	switch (config_cur)
@@ -499,6 +610,9 @@ void ebt_edit_config_update(void)
 			sdl_video_change_size();
 		}
 		break;
+	case CFG_ITEM_FULL_KB:
+		ebt_change_param_u8(&config.full_kb, pad, pad_r, 0, 0, 1, 1);
+		break;
 #endif
 	case CFG_ITEM_CURSOR_BLINK: ebt_change_param_u8(&config.cursor_blink, pad, pad_r, CFG_CURSOR_BLINK_MED, 0, CFG_BLINKS_ALL - 1, 1); break;
 	case CFG_ITEM_FONT: ebt_change_param_u8(&config.font, pad, pad_r, 0, 0, CFG_FONTS_ALL - 1, 1); break;
@@ -506,5 +620,8 @@ void ebt_edit_config_update(void)
 	case CFG_ITEM_PTN_SOUND_TYPE: ebt_change_param_u8(&config.ptn_sound_type, pad, pad_r, 0, 0, CFG_SOUND_TYPES_ALL - 1, 1); break;
 	case CFG_ITEM_PTN_SOUND_LEN: ebt_change_param_u8(&config.ptn_sound_len, pad, pad_r, 0, 0, 0x20, 1); break;
 	case CFG_ITEM_SWAP_LFT_RGT: ebt_change_param_u8(&config.swap_lft_rgt, pad, pad_r, 0, 0, 1, 1); break;
+	case CFG_ITEM_AUTO_LOAD: ebt_change_param_u8(&config.auto_load, pad, pad_r, 0, 0, 1, 1); break;
+	case CFG_ITEM_HINTS: ebt_change_param_u8(&config.hints, pad, pad_r, 0, 0, 1, 1); break;
+	case CFG_ITEM_BACKUP: ebt_change_param_u8(&config.backup, pad, pad_r, 0, 0, 1, 1); break;
 	}
 }

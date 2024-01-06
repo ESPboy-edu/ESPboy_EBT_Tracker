@@ -2,25 +2,31 @@ signed char ebt_dlg_name_kb_x = 0;
 signed char ebt_dlg_name_kb_y = 0;
 signed char ebt_dlg_name_cur = 0;
 
-#define EDIT_NAME_LEN	12
+#define EDIT_NAME_MAX_LEN	12
 
-char ebt_dlg_input_str[EDIT_NAME_LEN + 1];
+char ebt_dlg_input_str[EDIT_NAME_MAX_LEN + 1];
 
 const char* ebt_dlg_name = NULL;
 
+BOOL ebt_dlg_allow_empty = FALSE;
+int8_t ebt_dlg_name_max_len = 0;
+
 const char ebt_dlg_name_sym[40+1] = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ_ <e";
 
-void(*ebt_edit_name_callback_ok)(void);
-void(*ebt_edit_name_callback_cancel)(void);
+void(*ebt_dlg_name_callback_ok)(void);
+void(*ebt_dlg_name_callback_cancel)(void);
 
 
 
-void ebt_ask_name(const char* dlg_name, const char* default_name, void(*cb_ok)(void), void(*cb_cancel)(void))
+void ebt_ask_name(const char* dlg_name, const char* default_name, void(*cb_ok)(void), void(*cb_cancel)(void), int8_t max_len, BOOL allow_empty)
 {
+	if ((max_len == 0) || (max_len > EDIT_NAME_MAX_LEN)) max_len = EDIT_NAME_MAX_LEN; 
+	
 	ebt_dlg_name = dlg_name;
-
-	ebt_edit_name_callback_ok = cb_ok;
-	ebt_edit_name_callback_cancel = cb_cancel;
+	ebt_dlg_name_max_len = max_len;
+	ebt_dlg_allow_empty = allow_empty;
+	ebt_dlg_name_callback_ok = cb_ok;
+	ebt_dlg_name_callback_cancel = cb_cancel;
 
 	memset(ebt_dlg_input_str, 0x20, sizeof(ebt_dlg_input_str));
 	ebt_dlg_input_str[sizeof(ebt_dlg_input_str) - 1] = 0;
@@ -51,6 +57,19 @@ const char* ebt_get_name(void)
 
 
 
+BOOL ebt_name_is_empty(void)
+{
+	for (uint8_t i = 0; i < strlen(ebt_dlg_input_str); ++i)
+	{
+		if (ebt_dlg_input_str[i] > ' ') return FALSE;
+	}
+
+	return TRUE;
+}
+
+
+
+
 void ebt_input_name_init(void)
 {
 	ebt_dlg_name_cur = sizeof(ebt_dlg_input_str) - 1;	//if the name is not empty, set cursor to the last character
@@ -78,16 +97,22 @@ void ebt_input_name_draw(void)
 	{
 		set_font_color(COL_TEXT_DARK);
 		set_back_color(COL_BACK);
-		put_str(Text.width - (signed char)strlen(ebt_dlg_name), 0, ebt_dlg_name);
+		put_str(Text.width - (int8_t)strlen(ebt_dlg_name), 0, ebt_dlg_name);
 	}
 
 	set_font_color(COL_TEXT);
 	set_back_color(COL_BACK_BEAT);
 
-	int nx = 2;
+	int nx = Text.width / 2 - ebt_dlg_name_max_len / 2;
 	int ny = 6;
 
-	put_str(nx, ny, ebt_dlg_input_str);
+	for (int i = 0; i < ebt_dlg_name_max_len; ++i)
+	{
+		char c = ebt_dlg_input_str[i];
+		if (c < ' ') c = ' ';
+		put_char(nx + i, ny, c);
+	}
+
 	put_attr(nx + ebt_dlg_name_cur, ny, 0x5f);
 
 	set_font_color(COL_TEXT);
@@ -112,14 +137,14 @@ void ebt_input_name_add(char c)
 {
 	ebt_dlg_input_str[ebt_dlg_name_cur] = c;
 
-	if (ebt_dlg_name_cur < (EDIT_NAME_LEN - 1)) ++ebt_dlg_name_cur;
+	if (ebt_dlg_name_cur < (ebt_dlg_name_max_len - 1)) ++ebt_dlg_name_cur;
 }
 
 
 
 void ebt_input_name_backspace(void)
 {
-	if (ebt_dlg_name_cur == (EDIT_NAME_LEN - 1))
+	if (ebt_dlg_name_cur == (ebt_dlg_name_max_len - 1))
 	{
 		if (ebt_dlg_input_str[ebt_dlg_name_cur] != ' ')
 		{
@@ -137,9 +162,9 @@ void ebt_input_name_backspace(void)
 
 void ebt_input_name_done(void)
 {
-	if (strlen(ebt_dlg_input_str) > 0)
+	if (ebt_dlg_allow_empty || !ebt_name_is_empty())
 	{
-		if (ebt_edit_name_callback_ok) ebt_edit_name_callback_ok();
+		if (ebt_dlg_name_callback_ok) ebt_dlg_name_callback_ok();
 	}
 }
 
@@ -198,14 +223,14 @@ void ebt_input_name_update(void)
 
 	if (pad_r&PAD_ESC)
 	{
-		if (ebt_edit_name_callback_cancel) ebt_edit_name_callback_cancel();
+		if (ebt_dlg_name_callback_cancel) ebt_dlg_name_callback_cancel();
 	}
 
 	uint8_t kb_code = ebt_input_get_kb();
 
 	if (kb_code != KB_NONE)
 	{
-		if (kb_code == KB_BACKSPACE)
+		if ((kb_code == KB_DELETE) || (kb_code == KB_BACKSPACE))
 		{
 			ebt_input_name_backspace();
 			return;

@@ -282,10 +282,8 @@ void ebt_edit_order_update(void)
 
 	uint8_t kb = ebt_input_get_kb();
 
-	if (kb == KB_TAB)
-	{
-		order_menu_active ^= TRUE;
-	}
+	if (kb == KB_TAB) order_menu_active ^= TRUE;
+	if (kb == KB_UNDO) ebt_order_undo();
 
 	//check controls
 
@@ -304,7 +302,7 @@ void ebt_edit_order_update(void)
 
 		switch (kb)
 		{
-		case KB_BACKSPACE:
+		case KB_DELETE:
 			if (!order_trans_mode)
 			{
 				ops->ptn[cur_ord_chn] = 0;
@@ -316,7 +314,7 @@ void ebt_edit_order_update(void)
 			return;
 
 		case KB_INSERT: ebt_order_insert_pos(); return;
-		case KB_DELETE: ebt_order_delete_pos(); return;
+		case KB_BACKSPACE: ebt_order_delete_pos(); return;
 		case KB_PGUP: ebt_order_move_cur(-16); break;
 		case KB_PGDOWN: ebt_order_move_cur(16); break;
 		case KB_HOME: ebt_order_move_cur(-MAX_ORDER_LEN); break;
@@ -327,6 +325,7 @@ void ebt_edit_order_update(void)
 		{
 			if (n >= 0)
 			{
+				ebt_order_undo_set();
 				ops->ptn[cur_ord_chn] = ((ops->ptn[cur_ord_chn]) << 4) + n;
 				return;
 			}
@@ -335,6 +334,7 @@ void ebt_edit_order_update(void)
 		{
 			if (n >= 0)
 			{
+				ebt_order_undo_set();
 				BOOL neg = ops->trans[cur_ord_chn] < 0 ? TRUE : FALSE;
 				ops->trans[cur_ord_chn] = n;
 				if (neg) ops->trans[cur_ord_chn] = -ops->trans[cur_ord_chn];
@@ -343,6 +343,7 @@ void ebt_edit_order_update(void)
 
 			if (kb == KB_MINUS)
 			{
+				ebt_order_undo_set();
 				ops->trans[cur_ord_chn] = -ops->trans[cur_ord_chn];
 				return;
 			}
@@ -513,9 +514,11 @@ void ebt_edit_order_update(void)
 
 	if (pad&PAD_ACT)
 	{
+		order_pos_struct* ops = &song->order.pos[cur_ord_pos];
+
 		if (!order_trans_mode)
 		{
-			int ptn = song->order.pos[cur_ord_pos].ptn[cur_ord_chn];
+			int ptn = ops->ptn[cur_ord_chn];
 
 			if (pad_t&PAD_ACT)
 			{
@@ -579,13 +582,17 @@ void ebt_edit_order_update(void)
 				ptn = 0;
 			}
 
-			song->order.pos[cur_ord_pos].ptn[cur_ord_chn] = ptn;
+			if (ops->ptn[cur_ord_chn] != ptn)
+			{
+				ebt_order_undo_set();
+				ops->ptn[cur_ord_chn] = ptn;
+			}
 			
 			if (ptn) cur_ptn_num = ptn;
 		}
 		else
 		{
-			signed char trans = song->order.pos[cur_ord_pos].trans[cur_ord_chn];
+			signed char trans = ops->trans[cur_ord_chn];
 
 			if (!trans) trans = cur_ord_prev_trans;
 
@@ -598,7 +605,11 @@ void ebt_edit_order_update(void)
 
 			if (trans) cur_ord_prev_trans = trans;
 
-			song->order.pos[cur_ord_pos].trans[cur_ord_chn] = trans;
+			if (ops->trans[cur_ord_chn] != trans)
+			{
+				ebt_order_undo_set();
+				ops->trans[cur_ord_chn] = trans;
+			}
 		}
 	}
 

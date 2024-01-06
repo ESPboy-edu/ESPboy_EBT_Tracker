@@ -95,29 +95,43 @@ void ebt_player_set_ins(player_channel_struct* pcs, uint8_t ins)
 
 
 
+int16_t ebt_player_octave_note_to_pitch16(uint8_t octave, uint8_t note)
+{
+	return ((octave * 12 + note) << 8);
+}
+
+
+
 void ebt_player_begin_note(uint8_t ch, uint8_t octave, uint8_t note)
 {
 	player_channel_struct* pcs = &player.chn[ch]; 
 	instrument_struct* is = &song->ins[pcs->ins];
-	
-	if (is->fixed_pitch)
-	{
-		octave = is->base_note / 12;
-		note = is->base_note % 12;
-	}
 
-	pcs->base_pitch_to = ebt_synth_octave_note_to_pitch16(octave + is->octave, note, is->detune);
+	pcs->base_pitch_to = ebt_player_octave_note_to_pitch16(octave, note);
 
 	if (pcs->base_pitch_to < 0) pcs->base_pitch_to = 0;
 
-	ebt_synth_start(ch, is->wave, is->volume, is->slide, is->cut_time, is->mod_delay, is->mod_speed, is->mod_depth, is->fixed_pitch, is->base_note);
+	ebt_synth_start(ch + 0, is->wave, is->volume, is->offset, is->detune, is->slide, is->cut_time, is->mod_delay, is->mod_speed, is->mod_depth, is->fixed_pitch, is->base_note, (is->aux_id != 0) ? is->aux_mix : SYNTH_MIX_NONE);
+
+	if (is->aux_id != 0)
+	{
+		int ins_ref = pcs->ins + is->aux_id;
+
+		if ((ins_ref >= 0) && (ins_ref < MAX_INSTRUMENTS))
+		{
+			instrument_struct* is_aux = &song->ins[ins_ref];
+
+			ebt_synth_start(ch + 4, is_aux->wave, is_aux->volume, is_aux->offset, is_aux->detune, is_aux->slide, is_aux->cut_time, is_aux->mod_delay, is_aux->mod_speed, is_aux->mod_depth, is_aux->fixed_pitch, is_aux->base_note, SYNTH_MIX_NONE);
+		}
+	}
 }
 
 
 
 void ebt_player_stop_note(uint8_t ch)
 {
-	ebt_synth_stop(ch);
+	ebt_synth_stop(ch + 0);
+	ebt_synth_stop(ch + 4);
 }
 
 
@@ -146,11 +160,13 @@ void ebt_player_reset(void)
 
 		if (song->pan_default[ch] < 0)
 		{
-			ebt_synth_set_pan(ch, abs(song->pan_default[ch]) << 4);
+			ebt_synth_set_pan(ch + 0, abs(song->pan_default[ch]) << 4);
+			ebt_synth_set_pan(ch + 4, abs(song->pan_default[ch]) << 4);
 		}
 		else
 		{
-			ebt_synth_set_pan(ch, song->pan_default[ch]);
+			ebt_synth_set_pan(ch + 0, song->pan_default[ch]);
+			ebt_synth_set_pan(ch + 4, song->pan_default[ch]);
 		}
 
 		pcs->ins = 1;
@@ -506,7 +522,8 @@ void ebt_player_frame_advance(void)
 				((ch == 2) && (mute_state&MUTE_CH3)) ||
 				((ch == 3) && (mute_state&MUTE_CH4)))
 			{
-				ebt_synth_stop(ch);
+				ebt_synth_stop(ch + 0);
+				ebt_synth_stop(ch + 4);
 				continue;
 			}
 		}
@@ -514,14 +531,16 @@ void ebt_player_frame_advance(void)
 		{
 			if (ch > 0) //ch1..3 always muted in the pattern and instrument test modes
 			{
-				ebt_synth_stop(ch);
+				ebt_synth_stop(ch + 0);
+				ebt_synth_stop(ch + 4);
 				continue;
 			}
 		}
 		
 		if (pcs->porta_speed != 0)
 		{
-			ebt_synth_clear_phase_reset(ch);	//do not reset phase when portamento is active
+			ebt_synth_clear_phase_reset(ch + 0);	//do not reset phase when portamento is active
+			ebt_synth_clear_phase_reset(ch + 4);
 		}
 
 		if ((pcs->porta_speed == 0) || (pcs->base_pitch == 0x7fff) || (pcs->base_pitch_to == 0x7fff))
@@ -570,7 +589,10 @@ void ebt_player_frame_advance(void)
 		if (pcs->out_pitch < 0) pcs->out_pitch = 0;
 		if (pcs->out_pitch > 10 * 12 * 256) pcs->out_pitch = 10 * 12 * 256;
 
-		ebt_synth_set_pitch16(ch, pcs->out_pitch);
+		instrument_struct* is = &song->ins[pcs->ins];
+
+		ebt_synth_set_pitch16(ch + 0, pcs->out_pitch);
+		ebt_synth_set_pitch16(ch + 4, pcs->out_pitch);
 	}
 }
 
@@ -605,7 +627,11 @@ void ebt_player_frame_update(void)
 
 		//count frames and interleave speeds
 
-		player.speed_frame = player.speed[(player.speed_row / player.speed_interleave) & 1];
+		int interleave = player.speed_interleave;
+
+		if (interleave < 1) interleave = 1;	//may be accidentally set to 0 with the Fxx effect
+
+		player.speed_frame = player.speed[(player.speed_row / interleave) & 1];
 
 		++player.speed_row;
 	}

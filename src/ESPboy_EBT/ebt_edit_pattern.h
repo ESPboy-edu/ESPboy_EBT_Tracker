@@ -4,12 +4,13 @@ enum {
 	PTN_MENU_LOOP,
 	PTN_MENU_INSERT,
 	PTN_MENU_DELETE,
+	PTN_MENU_TRANSPOSE,
 	PTN_MENU_EFF,
 	PTN_MENU_ALL
 };
 
 enum {
-	PNT_COL_NOTE_OCTAVE = 0,
+	PTN_COL_NOTE_OCTAVE = 0,
 	PTN_COL_INS,
 	PTN_COL_EFF_TYPE,
 	PTN_COL_EFF_PARAM
@@ -20,6 +21,7 @@ uint8_t ptn_menu_active = FALSE;
 int8_t ptn_menu_double_tap = 0;
 int8_t ptn_ins_double_tap = 0;
 uint8_t ptn_act_released = TRUE;
+
 
 
 
@@ -36,6 +38,8 @@ void ebt_edit_pattern_init(void)
 void ebt_edit_pattern_draw(void)
 {
 	char buf[16];
+
+	pattern_struct* ps = &song->ptns[cur_ptn_num];
 
 	//draw screen header
 
@@ -79,7 +83,11 @@ void ebt_edit_pattern_draw(void)
 
 	ebt_item_color((ptn_menu_cur == PTN_MENU_DELETE) && ptn_menu_active);
 
-	put_str(0, 11, "DEL");
+	put_str(0, 10, "DEL");
+
+	ebt_item_color((ptn_menu_cur == PTN_MENU_TRANSPOSE) && ptn_menu_active);
+
+	put_str(0, 11, "TRA");
 
 	int sy = Text.height - 3;
 
@@ -96,11 +104,12 @@ void ebt_edit_pattern_draw(void)
 
 	int row = cur_ptn_row - Text.height / 2;
 
-	if ((row + Text.height) >= song->ptns[cur_ptn_num].len) row = song->ptns[cur_ptn_num].len - Text.height;
+	if ((row + Text.height) >= ps->len) row = ps->len - Text.height;
 
 	if (row < 0) row = 0;
 
 	int cur_col = !ptn_menu_active ? cur_ptn_col : -1;
+	int cur_row = 0;
 
 	const uint8_t col_cursor = 0x05;
 
@@ -108,13 +117,17 @@ void ebt_edit_pattern_draw(void)
 
 	for (int i = 0; i < Text.height; ++i)
 	{
-		pattern_row_struct* ns = &song->ptns[cur_ptn_num].rows[row];
+		pattern_row_struct* rs = &ps->rows[row];
 
 		uint8_t col_back = COL_BACK_ROW;
 
 		if (!(row & 3)) col_back = COL_BACK_BEAT;
 
-		if (row == cur_ptn_row) col_back = COL_HEAD_PTN;
+		if (row == cur_ptn_row)
+		{
+			cur_row = i;
+			col_back = COL_HEAD_PTN;
+		}
 
 		set_font_color(COL_TEXT);
 		set_back_color(col_back);
@@ -131,7 +144,7 @@ void ebt_edit_pattern_draw(void)
 
 		//draw note name and octave
 
-		int note = ns->note;
+		int note = rs->note;
 
 		if (note > 0)
 		{
@@ -155,7 +168,7 @@ void ebt_edit_pattern_draw(void)
 			buf[2] = '.';
 		}
 
-		if ((cur_ptn_row == row) && (cur_col == 0))
+		if ((cur_ptn_row == row) && (cur_col == PTN_COL_NOTE_OCTAVE))
 		{
 			ebt_item_color(1);
 		}
@@ -170,10 +183,10 @@ void ebt_edit_pattern_draw(void)
 
 		//draw instrument number
 
-		if (ns->ins)
+		if (rs->ins)
 		{
-			buf[0] = hex_to_char(ns->ins >> 4);
-			buf[1] = hex_to_char(ns->ins & 0x0f);
+			buf[0] = hex_to_char(rs->ins >> 4);
+			buf[1] = hex_to_char(rs->ins & 0x0f);
 		}
 		else
 		{
@@ -181,7 +194,7 @@ void ebt_edit_pattern_draw(void)
 			buf[1] = '.';
 		}
 
-		if ((cur_ptn_row == row) && (cur_col == 1))
+		if ((cur_ptn_row == row) && (cur_col == PTN_COL_INS))
 		{
 			ebt_item_color(1);
 		}
@@ -201,7 +214,7 @@ void ebt_edit_pattern_draw(void)
 		for (int e = 0; e < MAX_EFFECTS_PER_ROW; ++e)
 		{
 			if (e == cur_eff_column) continue;
-			if ((ns->effect[e].type > 0) || (ns->effect[e].param != 0)) ++effect_cnt;
+			if ((rs->effect[e].type > 0) || (rs->effect[e].param != 0)) ++effect_cnt;
 		}
 
 		if (effect_cnt > 0)
@@ -214,16 +227,16 @@ void ebt_edit_pattern_draw(void)
 
 		//draw effect type
 
-		if (ns->effect[cur_eff_column].type > 0)
+		if (rs->effect[cur_eff_column].type > 0)
 		{
-			buf[0] = hex_to_char(ns->effect[cur_eff_column].type - 1);
+			buf[0] = hex_to_char(rs->effect[cur_eff_column].type - 1);
 		}
 		else
 		{
 			buf[0] = '.';
 		}
 
-		if ((cur_ptn_row == row) && (cur_col == 2))
+		if ((cur_ptn_row == row) && (cur_col == PTN_COL_EFF_TYPE))
 		{
 			ebt_item_color(1);
 		}
@@ -238,10 +251,10 @@ void ebt_edit_pattern_draw(void)
 
 		//draw effect param
 
-		if ((ns->effect[cur_eff_column].type > 0) || (ns->effect[cur_eff_column].param > 0))
+		if ((rs->effect[cur_eff_column].type > 0) || (rs->effect[cur_eff_column].param > 0))
 		{
-			buf[0] = hex_to_char(ns->effect[cur_eff_column].param >> 4);
-			buf[1] = hex_to_char(ns->effect[cur_eff_column].param & 0x0f);
+			buf[0] = hex_to_char(rs->effect[cur_eff_column].param >> 4);
+			buf[1] = hex_to_char(rs->effect[cur_eff_column].param & 0x0f);
 		}
 		else
 		{
@@ -249,7 +262,7 @@ void ebt_edit_pattern_draw(void)
 			buf[1] = '.';
 		}
 
-		if ((cur_ptn_row == row) && (cur_col == 3))
+		if ((cur_ptn_row == row) && (cur_col == PTN_COL_EFF_PARAM))
 		{
 			ebt_item_color(1);
 		}
@@ -265,6 +278,87 @@ void ebt_edit_pattern_draw(void)
 		++row;
 
 		if (row >= song->ptns[cur_ptn_num].len) break;
+	}
+
+	//draw pattern hints
+
+	if (config.hints)
+	{
+		set_font_color(COL_TEXT_DARK);
+		set_back_color(COL_BACK);
+
+		const char* hint_str = 0;
+
+		switch (cur_ptn_col)
+		{
+		case PTN_COL_NOTE_OCTAVE:
+			if ((ps->rows[cur_ptn_row].note & 0x0f) >= 12)
+			{
+				hint_str = "REST";
+			}
+			else
+			{
+				hint_str = "NOTE";
+			}
+			break;
+
+		case PTN_COL_INS:
+			if (ps->rows[cur_ptn_row].ins > 0)
+			{
+				memset(buf, 0, MAX_INSTRUMENT_NAME_LEN + 1);
+				memcpy(buf, &song->ins[ps->rows[cur_ptn_row].ins].name, MAX_INSTRUMENT_NAME_LEN);
+				hint_str = buf;
+			}
+			else
+			{
+				hint_str = "INS";
+			}
+			break;
+
+		case PTN_COL_EFF_TYPE:
+			switch (ps->rows[cur_ptn_row].effect[cur_eff_column].type - 1)
+			{
+			case EFF_ARP: hint_str = "ARP"; break;
+			case EFF_SLIDE_UP: hint_str = "SLUP"; break;
+			case EFF_SLIDE_DOWN: hint_str = "SLDW"; break;
+			case EFF_PORTA: hint_str = "PORT"; break;
+			case EFF_PHASE: hint_str = "PHA"; break;
+			case EFF_PAN: hint_str = "PAN"; break;
+			case EFF_WAVE: hint_str = "WAVE"; break;
+			case EFF_VOLUME: hint_str = "VOL"; break;
+			case EFF_EXTRA: hint_str = "EXT"; break;
+			case EFF_SPEED: hint_str = "SPD"; break;
+			default: "NONE";
+			}
+			if (ps->rows[cur_ptn_row].effect[cur_eff_column].type == 0) hint_str = "EFF";
+			break;
+
+		case PTN_COL_EFF_PARAM:
+			switch (ps->rows[cur_ptn_row].effect[cur_eff_column].type - 1)
+			{
+			case EFF_ARP: hint_str = "XY"; break;
+			case EFF_SLIDE_UP: hint_str = "XX"; break;
+			case EFF_SLIDE_DOWN: hint_str = "XX"; break;
+			case EFF_PORTA: hint_str = "XX"; break;
+			case EFF_PHASE: hint_str = "XX"; break;
+			case EFF_PAN: hint_str = "LR"; break;
+			case EFF_WAVE: hint_str = "XX"; break;
+			case EFF_VOLUME: hint_str = "0X"; break;
+			case EFF_EXTRA: hint_str = "XY"; break;
+			case EFF_SPEED: hint_str = "XY"; break;
+			default: hint_str = "PRM";
+			}
+			break;
+		}
+
+		if (hint_str)
+		{
+			int8_t hy = Text.height - 1;
+
+			if (cur_row > Text.height / 2) hy = 0;
+
+			put_str(Text.width - (int8_t)strlen(hint_str), hy, hint_str);
+		}
 	}
 }
 
@@ -317,10 +411,10 @@ void ebt_edit_pattern_update(void)
 	
 	pattern_row_struct* ns = &song->ptns[cur_ptn_num].rows[cur_ptn_row];
 
-	if (kb == KB_TAB)
-	{
-		ptn_menu_active ^= TRUE;
-	}
+	BOOL change = FALSE;
+
+	if (kb == KB_TAB) ptn_menu_active ^= TRUE;
+	if (kb == KB_UNDO) ebt_pattern_undo();
 
 	if (!ptn_menu_active)
 	{
@@ -329,34 +423,51 @@ void ebt_edit_pattern_update(void)
 
 		switch (cur_ptn_col)
 		{
-			case PNT_COL_NOTE_OCTAVE:
+			case PTN_COL_NOTE_OCTAVE:
 			{
 				uint8_t prev_note = ns->note;
 
-				if (c >= '1'&&c <= '9') ns->note = (ns->note & 0x0f) | ((c - '0') << 4);
+				if (c >= '1'&&c <= '9')
+				{
+					ns->note = (ns->note & 0x0f) | ((c - '0') << 4);
+					change = TRUE;
+				}
 
 				uint8_t octave = cur_ptn_prev_note & 0xf0;
 
+				int new_note = -1;
 				switch (c)
 				{
-				case 'Z': ns->note = octave + 0; break;
-				case 'S': ns->note = octave + 1; break;
-				case 'X': ns->note = octave + 2; break;
-				case 'D': ns->note = octave + 3; break;
-				case 'C': ns->note = octave + 4; break;
-				case 'V': ns->note = octave + 5; break;
-				case 'G': ns->note = octave + 6; break;
-				case 'B': ns->note = octave + 7; break;
-				case 'H': ns->note = octave + 8; break;
-				case 'N': ns->note = octave + 9; break;
-				case 'J': ns->note = octave + 10; break;
-				case 'M': ns->note = octave + 11; break;
-				case 'A': ns->note = octave + 15; break;
+				case 'Z': new_note = octave + 0; break;
+				case 'S': new_note = octave + 1; break;
+				case 'X': new_note = octave + 2; break;
+				case 'D': new_note = octave + 3; break;
+				case 'C': new_note = octave + 4; break;
+				case 'V': new_note = octave + 5; break;
+				case 'G': new_note = octave + 6; break;
+				case 'B': new_note = octave + 7; break;
+				case 'H': new_note = octave + 8; break;
+				case 'N': new_note = octave + 9; break;
+				case 'J': new_note = octave + 10; break;
+				case 'M': new_note = octave + 11; break;
+				case 'A': new_note = octave + 15; break;
 				}
 
-				if (kb == KB_BACKSPACE) ns->note = 0;
+				if (new_note >= 0)
+				{
+					ebt_pattern_undo_set();
+					ns->note = new_note;
+					change = TRUE;
+					kb = 0;
+				}
 
 				if (ns->note != prev_note) cur_ptn_prev_note = ns->note;
+
+				if (kb == KB_DELETE)
+				{
+					ebt_pattern_undo_set();
+					ns->note = 0;
+				}
 			}
 			break;
 
@@ -365,9 +476,20 @@ void ebt_edit_pattern_update(void)
 				uint8_t prev_ins = ns->ins;
 
 				if (n >= 0) ns->ins = (ns->ins << 4) + n;
-				if (kb == KB_BACKSPACE) ns->ins = 0;
+				
+				if (ns->ins != prev_ins)
+				{
+					ebt_pattern_undo_set();
+					cur_ptn_prev_ins = ns->ins;
+					change = TRUE;
+					kb = 0;
+				}
 
-				if (ns->ins != prev_ins) cur_ptn_prev_ins = ns->ins;
+				if (kb == KB_DELETE)
+				{
+					ebt_pattern_undo_set();
+					ns->ins = 0;
+				}
 			}
 			break;
 
@@ -375,10 +497,24 @@ void ebt_edit_pattern_update(void)
 			{
 				uint8_t prev_type = ns->effect[cur_eff_column].type;
 
-				if (n >= 0) ns->effect[cur_eff_column].type = n;
-				if (kb == KB_BACKSPACE) ns->effect[cur_eff_column].type = 0;
+				if (n >= 0)
+				{
+					ebt_pattern_undo_set();
+					ns->effect[cur_eff_column].type = n;
+					kb = 0;
+				}
+				
+				if (ns->effect[cur_eff_column].type != prev_type)
+				{
+					cur_ptn_prev_effect = ns->effect[cur_eff_column].type;
+					change = TRUE;
+				}
 
-				if (ns->effect[cur_eff_column].type != prev_type) cur_ptn_prev_effect = ns->effect[cur_eff_column].type;
+				if (kb == KB_DELETE)
+				{
+					ebt_pattern_undo_set();
+					ns->effect[cur_eff_column].type = 0;
+				}
 			}
 			break;
 
@@ -386,18 +522,38 @@ void ebt_edit_pattern_update(void)
 			{
 				uint8_t prev_param = ns->effect[cur_eff_column].param;
 
-				if (n >= 0) ns->effect[cur_eff_column].param = (ns->effect[cur_eff_column].param << 4) + n;
-				if (kb == KB_BACKSPACE) ns->effect[cur_eff_column].param = 0;
+				if (n >= 0)
+				{
+					ebt_pattern_undo_set();
+					ns->effect[cur_eff_column].param = (ns->effect[cur_eff_column].param << 4) + n;
+					kb = 0;
+				}
+				
+				if (ns->effect[cur_eff_column].param != prev_param)
+				{
+					cur_ptn_prev_param = ns->effect[cur_eff_column].param;
+					change = TRUE;
+				}
 
-				if (ns->effect[cur_eff_column].param != prev_param) cur_ptn_prev_param = ns->effect[cur_eff_column].param;
+				if (kb == KB_DELETE)
+				{
+					ebt_pattern_undo_set();
+					ns->effect[cur_eff_column].param = 0;
+				}
 			}
 			break;
 		}
 
 		switch (kb)
 		{
-		case KB_INSERT: ebt_pattern_insert_row(); break;
-		case KB_DELETE: ebt_pattern_delete_row(); break;
+		case KB_INSERT:
+			ebt_pattern_undo_set();
+			ebt_pattern_insert_row();
+			break;
+		case KB_BACKSPACE:
+			ebt_pattern_undo_set(); 
+			ebt_pattern_delete_row();
+			break;
 		case KB_PGUP: ebt_pattern_move_cur(-4, TRUE); break;
 		case KB_PGDOWN: ebt_pattern_move_cur(4, TRUE); break;
 		case KB_HOME: ebt_pattern_move_cur(0, FALSE); break;
@@ -440,11 +596,38 @@ void ebt_edit_pattern_update(void)
 			switch (ptn_menu_cur)
 			{
 			case PTN_MENU_INSERT:
-				if (pad_t & PAD_ACT) ebt_pattern_insert_row();
+				if (pad_t & PAD_ACT)
+				{
+					ebt_pattern_undo_set();
+					ebt_pattern_insert_row();
+				}
 				break;
 
 			case PTN_MENU_DELETE:
-				if (pad_t & PAD_ACT) ebt_pattern_delete_row();
+				if (pad_t & PAD_ACT)
+				{
+					ebt_pattern_undo_set();
+					ebt_pattern_delete_row();
+				}
+				break;
+
+			case PTN_MENU_TRANSPOSE:
+				{
+					int add = 0;
+					if (pad_t&PAD_UP) add = 12;
+					if (pad_t&PAD_DOWN) add = -12;
+					if (pad_t&PAD_LEFT) add = -1;
+					if (pad_t&PAD_RIGHT) add = 1;
+
+					if (add != 0)
+					{
+						if (ebt_pattern_transpose(add, FALSE))
+						{
+							ebt_pattern_undo_set();
+							ebt_pattern_transpose(add, TRUE);
+						}
+					}
+				}
 				break;
 			}
 		}
@@ -550,11 +733,9 @@ void ebt_edit_pattern_update(void)
 		}
 	}
 
-	BOOL change = FALSE;
-	
 	switch (cur_ptn_col)
 	{
-	case PNT_COL_NOTE_OCTAVE:	//note and octave
+	case PTN_COL_NOTE_OCTAVE:	//note and octave
 	{
 		if (pad & PAD_ACT)
 		{
@@ -613,6 +794,7 @@ void ebt_edit_pattern_update(void)
 			if (ns->note != note_octave)
 			{
 				change = TRUE;
+				ebt_pattern_undo_set();
 				ns->note = note_octave;
 			}
 		}
@@ -681,6 +863,7 @@ void ebt_edit_pattern_update(void)
 
 			if (ns->ins != ins)
 			{
+				ebt_pattern_undo_set();
 				ns->ins = ins;
 				change = TRUE;
 			}
@@ -742,11 +925,13 @@ void ebt_edit_pattern_update(void)
 
 			if (ns->effect[cur_eff_column].type != type)
 			{
+				ebt_pattern_undo_set();
 				ns->effect[cur_eff_column].type = type;
 				change = TRUE;
 			}
 			if (ns->effect[cur_eff_column].param != param)
 			{
+				ebt_pattern_undo_set();
 				ns->effect[cur_eff_column].param = param;
 				change = TRUE;
 			}
@@ -804,11 +989,13 @@ void ebt_edit_pattern_update(void)
 
 			if (ns->effect[cur_eff_column].type != type)
 			{
+				ebt_pattern_undo_set();
 				ns->effect[cur_eff_column].type = type;
 				change = TRUE;
 			}
 			if (ns->effect[cur_eff_column].param != param)
 			{
+				ebt_pattern_undo_set();
 				ns->effect[cur_eff_column].param = param;
 				change = TRUE;
 			}

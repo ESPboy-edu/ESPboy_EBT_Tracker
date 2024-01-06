@@ -1,4 +1,4 @@
-#define MAX_LINE_LEN	32
+#define MAX_LINE_LEN	(MAX_PATH+4)
 
 char ebt_file_line[MAX_LINE_LEN] = { 0 };
 
@@ -71,6 +71,39 @@ const char* ebt_file_get_line(void)
 void ebt_file_put_line(const char* line)
 {
   fprintf(ebt_file_handler, "%s\n", line);
+}
+
+
+
+void ebt_file_rename(const char* old_name, const char* new_name)
+{
+	char filepath_old[MAX_PATH];
+	char filepath_new[MAX_PATH];
+
+	strncpy(filepath_old, dataDirectory, sizeof(filepath_old) - 1);
+	strncat(filepath_old, old_name, sizeof(filepath_old) - 1);
+
+	strncpy(filepath_new, dataDirectory, sizeof(filepath_new) - 1);
+	strncat(filepath_new, new_name, sizeof(filepath_new) - 1);
+
+	printf("rename file %s to %s\n", filepath_old, filepath_new);
+
+	remove(filepath_new);
+	rename(filepath_old, filepath_new);
+}
+
+
+
+void ebt_file_delete(const char* filename)
+{
+	char filepath[MAX_PATH];
+
+	strncpy(filepath, dataDirectory, sizeof(filepath) - 1);
+	strncat(filepath, filename, sizeof(filepath) - 1);
+
+	printf("delete file %s\n", filepath);
+
+	remove(filepath);
 }
 
 #endif
@@ -151,6 +184,33 @@ void ebt_file_put_line(const char* line)
   snprintf(ebt_file_line, sizeof(ebt_file_line), "%s", line);
 
   ebt_file_entry.println(ebt_file_line);
+}
+
+
+
+void ebt_file_rename(const char* old_name, const char* new_name)
+{
+	printf("rename file %s to %s\n", old_name, new_name);
+
+  sound_output_shut();
+  
+	LittleFS.remove(new_name);
+	LittleFS.rename(old_name, new_name);
+  
+  sound_output_init();
+}
+
+
+
+void ebt_file_delete(const char* filename)
+{
+	printf("delete file %s\n", filename);
+
+  sound_output_shut();
+  
+	LittleFS.remove(filename);
+
+  sound_output_init();
 }
 
 #endif

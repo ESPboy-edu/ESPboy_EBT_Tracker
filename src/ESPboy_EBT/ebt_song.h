@@ -1,3 +1,111 @@
+void ebt_undo_clear(void)
+{
+	undo_type = UNDO_EMPTY;
+}
+
+
+
+void ebt_pattern_undo_set(void)
+{
+	undo_src = cur_ptn_num;
+	undo_type = UNDO_PATTERN;
+
+	memcpy(undo_buf, &song->ptns[undo_src], sizeof(pattern_struct));
+}
+
+
+
+BOOL ebt_pattern_is_undo(void)
+{
+	return (undo_type == UNDO_PATTERN) ? TRUE : FALSE;
+}
+
+
+
+void ebt_pattern_undo(void)
+{
+	if (undo_type != UNDO_PATTERN) return;
+
+	uint8_t* src = undo_buf;
+	uint8_t* dst = (uint8_t*)&song->ptns[undo_src];
+
+	for (int i = 0; i < sizeof(pattern_struct); ++i)
+	{
+		uint8_t temp = dst[i];
+		dst[i] = src[i];
+		src[i] = temp;
+	}
+}
+
+
+
+void ebt_instrument_undo_set(void)
+{
+	undo_src = cur_ins;
+	undo_type = UNDO_INSTRUMENT;
+
+	memcpy(undo_buf, &song->ins[undo_src], sizeof(instrument_struct));
+}
+
+
+BOOL ebt_instrument_is_undo(void)
+{
+	return (undo_type == UNDO_INSTRUMENT) ? TRUE : FALSE;
+}
+
+
+
+void ebt_instrument_undo(void)
+{
+	if (undo_type != UNDO_INSTRUMENT) return;
+
+	uint8_t* src = undo_buf;
+	uint8_t* dst = (uint8_t*)&song->ins[undo_src];
+
+	for (int i = 0; i < sizeof(instrument_struct); ++i)
+	{
+		uint8_t temp = dst[i];
+		dst[i] = src[i];
+		src[i] = temp;
+	}
+}
+
+
+
+void ebt_order_undo_set(void)
+{
+	undo_src = cur_ord_pos;
+	undo_type = UNDO_ORDER_POS;
+
+	memcpy(undo_buf, &song->order.pos[undo_src], sizeof(order_pos_struct));
+}
+
+
+
+BOOL ebt_order_is_undo(void)
+{
+	return (undo_type == UNDO_ORDER_POS) ? TRUE : FALSE;
+}
+
+
+
+void ebt_order_undo(void)
+{
+	if (undo_type != UNDO_ORDER_POS) return;
+
+	uint8_t* src = undo_buf;
+	uint8_t* dst = (uint8_t*)&song->order.pos[undo_src];
+
+	for (int i = 0; i < sizeof(order_pos_struct); ++i)
+	{
+		uint8_t temp = dst[i];
+		dst[i] = src[i];
+		src[i] = temp;
+	}
+}
+
+
+
 void ebt_instrument_copy(void)
 {
 	memcpy(&clipboard_ins, &song->ins[cur_ins], sizeof(instrument_struct));
@@ -11,8 +119,52 @@ void ebt_instrument_paste(void)
 {
 	if (!clipboard_ins_empty)
 	{
+		ebt_instrument_undo_set();
 		memcpy(&song->ins[cur_ins], &clipboard_ins, sizeof(instrument_struct));
 	}
+}
+
+
+
+BOOL ebt_pattern_transpose(int add, BOOL apply)
+{
+	BOOL no_clip = TRUE;
+
+	for (int row = 0; row < MAX_PATTERN_LEN; ++row)
+	{
+		uint8_t note_octave = song->ptns[cur_ptn_num].rows[row].note;
+
+		if ((note_octave > 0) && ((note_octave & 15) < 12))
+		{
+			int note = note_octave & 15;
+			int octave = note_octave >> 4;
+			int note_linear = octave * 12 + note;
+
+			note_linear += add;
+
+			if (note_linear < 1 * 12)
+			{
+				note_linear = 1 * 12;
+				no_clip = FALSE;
+			}
+
+			if (note_linear >= 10 * 12)
+			{
+				note_linear = 10 * 12 - 1;
+				no_clip = FALSE;
+			}
+
+			if (apply)
+			{
+				note = note_linear % 12;
+				octave = note_linear / 12;
+				note_octave = note + (octave << 4);
+				song->ptns[cur_ptn_num].rows[row].note = note_octave;
+			}
+		}
+	}
+
+	return no_clip;
 }
 
 
@@ -30,6 +182,7 @@ void ebt_pattern_paste(void)
 {
 	if (!clipboard_pattern_empty)
 	{
+		ebt_pattern_undo_set();
 		memcpy(&song->ptns[cur_ptn_num], &clipboard_pattern, sizeof(pattern_struct));
 	}
 }
@@ -199,7 +352,47 @@ void ebt_song_clear(BOOL clear_instruments)
 		}
 	}
 
+	ebt_undo_clear();
+
 	osd_message_clear();
+}
+
+
+
+int16_t ebt_song_count_instrument_ptn_refs(int16_t ins)
+{
+	int16_t ins_count = 0;
+
+	for (int ptn = 0; ptn < MAX_PATTERNS; ++ptn)
+	{
+		pattern_struct* ps = &song->ptns[ptn];
+
+		for (int row = 0; row < MAX_PATTERN_LEN; ++row)
+		{
+			if (ps->rows[row].ins == ins) ++ins_count;
+		}
+	}
+
+	return ins_count;
+}
+
+
+
+int16_t ebt_song_count_instrument_aux_refs(int16_t ins)
+{
+	int16_t ins_count = 0;
+
+	for (int id = 1; id < MAX_INSTRUMENTS; ++id)
+	{
+		int ins_ref = id + song->ins[id].aux_id;
+
+		if ((ins_ref >= 0) && (ins_ref < MAX_INSTRUMENTS))
+		{
+			if (ins_ref == ins) ++ins_count;
+		}
+	}
+
+	return ins_count;
 }
 
 
@@ -209,6 +402,23 @@ int ebt_song_get_instruments_in_use(uint8_t* in_use, int in_use_size)
 	memset(in_use, FALSE, in_use_size);
 
 	int ins_count = 0;
+
+	for (int ins = 1; ins < MAX_INSTRUMENTS; ++ins)
+	{
+		if (song->ins[ins].aux_id != 0)
+		{
+			int ins_ref = ins + song->ins[ins].aux_id;
+
+			if ((ins_ref >= 0) && (ins_ref < MAX_INSTRUMENTS))
+			{
+				if (!in_use[ins_ref])
+				{
+					in_use[ins_ref] = TRUE;
+					++ins_count;
+				}
+			}
+		}
+	}
 
 	for (int ptn = 0; ptn < MAX_PATTERNS; ++ptn)
 	{

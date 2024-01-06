@@ -62,7 +62,8 @@ BOOL ebt_confirm_update(void)
 
 	ebt_confirm_draw();
 
-	int pad_t = ebt_input_get_trigger();
+	uint8_t kb_code = ebt_input_get_kb();
+	uint8_t pad_t = ebt_input_get_trigger();
 
 	if (pad_t&PAD_LEFT)
 	{
@@ -81,6 +82,20 @@ BOOL ebt_confirm_update(void)
 	}
 
 	if (pad_t&PAD_ESC)
+	{
+		ebt_confirm_cur = 1;
+		ebt_confirm_msg = NULL;
+		ebt_confirm_callback();
+	}
+
+	if (kb_code == KB_Y)
+	{
+		ebt_confirm_cur = 0;
+		ebt_confirm_msg = NULL;
+		ebt_confirm_callback();
+	}
+
+	if (kb_code == KB_N)
 	{
 		ebt_confirm_cur = 1;
 		ebt_confirm_msg = NULL;

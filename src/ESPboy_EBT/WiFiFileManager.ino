@@ -98,8 +98,8 @@ void handleRoot()
 
   while (dir.next()) ++file_cnt;
 
-  int free_kb = fs_info.usedBytes / 1024;
-  int total_kb = fs_info.totalBytes / 1024;
+  int free_kb = (fs_info.usedBytes + 1023) / 1024;
+  int total_kb = (fs_info.totalBytes + 1023) / 1024;
 
   String output;
 

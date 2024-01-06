@@ -1,4 +1,4 @@
-#define VERSION_STR	"v1.1  091123"
+#define VERSION_STR	"v1.2  191123"
 
 
 #define OSD_MSG_TIMEOUT			30
@@ -23,11 +23,14 @@
 #define MAX_EFFECTS_PER_ROW   2
 #endif
 
+#define MAX_INSTRUMENT_NAME_LEN	4
+
 #define FILE_EXT_SONG			".ebt"
 #define FILE_EXT_INSTRUMENT		".eti"
 #define FILE_EXT_HEADER			".h"
 
 #define FILE_NAME_CFG			"ebt.cfg"
+#define FILE_NAME_BACKUP		"~backup.ebt"
 
 #define DEFAULT_SONG_SPEED		6
 #define DEFAULT_PATTERN_LEN		16
@@ -36,6 +39,7 @@
 #define DEFAULT_BASE_NOTE		3 * 12
 
 #define MAX_SONG_INFO_LEN		10
+#define MAX_FILENAME_LEN		32
 
 #define COL_BACK				0x00
 #define COL_BACK_ROW			0x01
@@ -103,7 +107,7 @@ struct order_struct {
 struct instrument_struct {
 	uint8_t wave;				//0..31
 	uint8_t volume;			//1..4
-	int8_t octave;				//-8..8
+	int8_t offset;				//-127..127
 	int8_t detune;				//-100..100
 	int8_t slide;				//-127..127
 	uint8_t mod_delay;	//0..255
@@ -112,6 +116,9 @@ struct instrument_struct {
 	uint8_t cut_time;			//0..255
 	uint8_t fixed_pitch;		//0..1
 	uint8_t base_note;		//0..96
+	int8_t aux_id;	//relative reference
+	uint8_t aux_mix;
+	char name[MAX_INSTRUMENT_NAME_LEN];
 };
 
 struct song_struct {
@@ -135,6 +142,19 @@ BOOL clipboard_ins_empty = TRUE;
 
 pattern_struct clipboard_pattern;
 BOOL clipboard_pattern_empty = TRUE;
+
+enum {
+	UNDO_EMPTY = 0,
+	UNDO_PATTERN,
+	UNDO_INSTRUMENT,
+	UNDO_ORDER_POS
+};
+
+uint32_t undo_buf_size = 0;
+uint8_t* undo_buf = NULL;
+uint8_t undo_type = UNDO_EMPTY;
+int16_t undo_src = 0;
+
 
 enum {
 	ORDER_CLIPBOARD_NONE = 0,
@@ -245,3 +265,19 @@ void ebt_pattern_copy(void);
 void ebt_pattern_paste(void);
 void ebt_order_copy(void);
 void ebt_order_paste(void);
+
+const char* ebt_song_get_last_name(void);
+void ebt_song_set_last_name(const char* str);
+void ebt_edit_song_make_name(char* filename, const char* ext, unsigned int filename_size);
+BOOL ebt_song_load(const char* filename);
+BOOL ebt_config_get_auto_load(void);
+BOOL ebt_config_get_backup(void);
+
+BOOL ebt_pattern_is_undo(void);
+void ebt_pattern_undo(void);
+BOOL ebt_instrument_is_undo(void);
+void ebt_instrument_undo(void);
+BOOL ebt_order_is_undo(void);
+void ebt_order_undo(void);
+
+void ebt_file_manager(void);

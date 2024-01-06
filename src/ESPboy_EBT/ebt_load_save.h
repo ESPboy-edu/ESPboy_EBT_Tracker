@@ -78,15 +78,28 @@ void ebt_instrument_parse(int ins)
 
 		if (ebt_parse_tag(line, "wa")) is->wave = param;
 		if (ebt_parse_tag(line, "vo")) is->volume = param;
-		if (ebt_parse_tag(line, "oc")) is->octave = (signed char)param;
-		if (ebt_parse_tag(line, "dt")) is->detune = (signed char)param;
-		if (ebt_parse_tag(line, "sl")) is->slide = (signed char)param;
+		if (ebt_parse_tag(line, "oc")) is->offset = (int8_t)param * 12;	//for compatibility with v1.1 and earlier
+		if (ebt_parse_tag(line, "of")) is->offset = (int8_t)param;
+		if (ebt_parse_tag(line, "dt")) is->detune = (int8_t)param;
+		if (ebt_parse_tag(line, "sl")) is->slide = (int8_t)param;
 		if (ebt_parse_tag(line, "md")) is->mod_delay = param;
 		if (ebt_parse_tag(line, "ms")) is->mod_speed = param;
 		if (ebt_parse_tag(line, "me")) is->mod_depth = param;
 		if (ebt_parse_tag(line, "ct")) is->cut_time = param;
 		if (ebt_parse_tag(line, "fp")) is->fixed_pitch = param;
 		if (ebt_parse_tag(line, "bn")) is->base_note = param;
+		if (ebt_parse_tag(line, "xi")) is->aux_id = (int8_t)param;
+		if (ebt_parse_tag(line, "xm")) is->aux_mix = param;
+		if (ebt_parse_tag(line, "nm"))
+		{
+			memset(is->name, 0, sizeof(is->name));
+			for (int i = 0; i < MAX_INSTRUMENT_NAME_LEN; ++i)
+			{
+				char c = line[2 + i];
+				if (c < ' ') break;
+				is->name[i] = c;
+			}
+		}
 	}
 }
 
@@ -119,7 +132,7 @@ void ebt_instrument_put(int ins)
 
 	ebt_file_put_line(ebt_make_hex8("wa", is->wave));
 	ebt_file_put_line(ebt_make_hex8("vo", is->volume));
-	ebt_file_put_line(ebt_make_hex8("oc", is->octave));
+	ebt_file_put_line(ebt_make_hex8("of", is->offset));
 	ebt_file_put_line(ebt_make_hex8("dt", is->detune));
 	ebt_file_put_line(ebt_make_hex8("sl", is->slide));
 	ebt_file_put_line(ebt_make_hex8("md", is->mod_delay));
@@ -128,6 +141,16 @@ void ebt_instrument_put(int ins)
 	ebt_file_put_line(ebt_make_hex8("ct", is->cut_time));
 	ebt_file_put_line(ebt_make_hex8("fp", is->fixed_pitch));
 	ebt_file_put_line(ebt_make_hex8("bn", is->base_note));
+	ebt_file_put_line(ebt_make_hex8("xi", is->aux_id));
+	ebt_file_put_line(ebt_make_hex8("xm", is->aux_mix));
+
+	char buf[3 + MAX_INSTRUMENT_NAME_LEN];
+	memset(buf, 0, sizeof(buf));
+	buf[0] = 'n';
+	buf[1] = 'm';
+	memcpy(&buf[2], is->name, sizeof(is->name));;
+	ebt_file_put_line(buf);
+
 	ebt_file_put_line("ie");
 }
 
@@ -308,9 +331,19 @@ BOOL ebt_song_save(const char* filename)
 	char buf[32];
 	uint8_t in_use[MAX_INSTRUMENTS];
 
+	if (!ebt_file_open(filename, TRUE)) return FALSE;
+
 	memset(in_use, 0, sizeof(in_use));
 
-	if (!ebt_file_open(filename, TRUE)) return FALSE;
+	for (int ins = 0; ins < MAX_INSTRUMENTS; ++ins)
+	{
+		if (song->ins[ins].aux_id != 0)
+		{
+			int ins_ref = (ins + song->ins[ins].aux_id);
+
+			if ((ins_ref >= 0) && (ins_ref < MAX_INSTRUMENTS)) in_use[ins_ref] = TRUE;
+		}
+	}
 
 	ebt_file_put_line(SIGNATURE_SONG);
 
@@ -468,4 +501,25 @@ BOOL ebt_song_save(const char* filename)
 	ebt_file_close();
 
 	return TRUE;
+}
+
+
+
+void ebt_song_backup(void)
+{
+	if (ebt_config_get_backup()) ebt_song_save(FILE_NAME_BACKUP);
+}
+
+
+
+void ebt_song_rename(const char* filename)
+{
+	char new_name[MAX_FILENAME_LEN];
+
+	if (!ebt_config_get_backup()) return;
+
+	strncpy(new_name, filename, sizeof(new_name) - 1);
+	new_name[0] = '~';
+
+	ebt_file_rename(filename, new_name);
 }

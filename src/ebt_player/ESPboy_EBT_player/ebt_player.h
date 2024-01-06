@@ -26,7 +26,7 @@ struct player_channel_struct {
 	uint8_t arp_div;
 	uint8_t ins;
 
-	const uint8_t* pattern_data; 
+	const uint8_t* pattern_data;
 	const uint8_t* pattern_data_orig;
 
 	uint8_t pattern_num;
@@ -99,14 +99,21 @@ uint8_t ebt_player_ins_fetch(uint8_t ins, uint8_t off)
 
 
 
+int16_t ebt_player_octave_note_to_pitch16(uint8_t octave, uint8_t note)
+{
+	return ((octave * 12 + note) << 8);
+}
+
+
+
 void ebt_player_begin_note(uint8_t ch, uint8_t octave, uint8_t note)
 {
 	player_channel_struct* pcs = &player.chn[ch];
 
 	uint8_t ins_wave = ebt_player_ins_fetch(pcs->ins, 0);
 	uint8_t ins_volume = ebt_player_ins_fetch(pcs->ins, 1);
-	int8_t ins_octave = ebt_player_ins_fetch(pcs->ins, 2);
-	int8_t ins_detune= ebt_player_ins_fetch(pcs->ins, 3);
+	int8_t ins_offset = ebt_player_ins_fetch(pcs->ins, 2);
+	int8_t ins_detune = ebt_player_ins_fetch(pcs->ins, 3);
 	int8_t ins_slide = ebt_player_ins_fetch(pcs->ins, 4);
 	uint8_t ins_mod_delay = ebt_player_ins_fetch(pcs->ins, 5);
 	uint8_t ins_mod_speed = ebt_player_ins_fetch(pcs->ins, 6);
@@ -114,6 +121,8 @@ void ebt_player_begin_note(uint8_t ch, uint8_t octave, uint8_t note)
 	uint8_t ins_cut_time = ebt_player_ins_fetch(pcs->ins, 8);
 	uint8_t ins_fix_pitch = ebt_player_ins_fetch(pcs->ins, 9);
 	uint8_t ins_base_note = ebt_player_ins_fetch(pcs->ins, 10);
+	int8_t ins_aux_id = ebt_player_ins_fetch(pcs->ins, 11);
+	uint8_t ins_aux_mix = ebt_player_ins_fetch(pcs->ins, 12);
 
 	if (ins_fix_pitch)
 	{
@@ -121,25 +130,45 @@ void ebt_player_begin_note(uint8_t ch, uint8_t octave, uint8_t note)
 		note = ins_base_note % 12;
 	}
 
-	pcs->base_pitch_to = ebt_synth_octave_note_to_pitch16(octave + ins_octave, note, ins_detune);
+	pcs->base_pitch_to = ebt_player_octave_note_to_pitch16(octave, note);
 
 	if (pcs->base_pitch_to < 0) pcs->base_pitch_to = 0;
 
-	ebt_synth_start(ch, ins_wave, ins_volume, ins_slide, ins_cut_time, ins_mod_delay, ins_mod_speed, ins_mod_depth, ins_fix_pitch, ins_base_note);
+	ebt_synth_start(ch + 0, ins_wave, ins_volume, ins_offset, ins_detune, ins_slide, ins_cut_time, ins_mod_delay, ins_mod_speed, ins_mod_depth, ins_fix_pitch, ins_base_note, (ins_aux_id != 0) ? ins_aux_mix : SYNTH_MIX_NONE);
+
+	if (ins_aux_id != 0)
+	{
+		int ins_ref = pcs->ins + ins_aux_id;
+
+		ins_wave = ebt_player_ins_fetch(ins_ref, 0);
+		ins_volume = ebt_player_ins_fetch(ins_ref, 1);
+		ins_offset = ebt_player_ins_fetch(ins_ref, 2);
+		ins_detune = ebt_player_ins_fetch(ins_ref, 3);
+		ins_slide = ebt_player_ins_fetch(ins_ref, 4);
+		ins_mod_delay = ebt_player_ins_fetch(ins_ref, 5);
+		ins_mod_speed = ebt_player_ins_fetch(ins_ref, 6);
+		ins_mod_depth = ebt_player_ins_fetch(ins_ref, 7);
+		ins_cut_time = ebt_player_ins_fetch(ins_ref, 8);
+		ins_fix_pitch = ebt_player_ins_fetch(ins_ref, 9);
+		ins_base_note = ebt_player_ins_fetch(ins_ref, 10);
+
+		ebt_synth_start(ch + 4, ins_wave, ins_volume, ins_offset, ins_detune, ins_slide, ins_cut_time, ins_mod_delay, ins_mod_speed, ins_mod_depth, ins_fix_pitch, ins_base_note, SYNTH_MIX_NONE);
+	}
 }
 
 
 
 void ebt_player_stop_note(uint8_t ch)
 {
-	ebt_synth_stop(ch);
+	ebt_synth_stop(ch + 0);
+	ebt_synth_stop(ch + 4);
 }
 
 
 
 void ebt_player_start(const void** data, int32_t sample_rate)
 {
-	memset(&player, 0, sizeof(player)); 
+	memset(&player, 0, sizeof(player));
 
 	player.frame_acc = 0;
 	player.frame_add = 0x10000 * PLAYER_FRAME_RATE / sample_rate;
@@ -159,7 +188,7 @@ void ebt_player_start(const void** data, int32_t sample_rate)
 	player.order_list = (const uint8_t*)pgm_read_dword((const uint32_t*)&data[1]);
 	player.ptn_list = (const uint8_t**)pgm_read_dword((const uint32_t*)&data[2]);
 	player.ins_list = (const uint8_t**)pgm_read_dword((const uint32_t*)&data[3]);
-	
+
 	for (int ch = 0; ch < PLAYER_CHANNELS; ++ch)
 	{
 		player_channel_struct* pcs = &player.chn[ch];
@@ -284,12 +313,12 @@ void ebt_player_row_fetch_and_advance(void)
 				}
 			}
 		}
-		
+
 		if (pcs->prev_ins > 0)
 		{
 			ebt_player_set_ins(pcs, pcs->prev_ins);
 		}
-		
+
 		if (pcs->prev_note > 0)
 		{
 			if ((pcs->prev_note & 15) < 12)
@@ -301,7 +330,7 @@ void ebt_player_row_fetch_and_advance(void)
 				ebt_player_stop_note(ch);
 			}
 		}
-		
+
 		for (int e = 0; e < MAX_EFFECTS_PER_ROW; ++e)
 		{
 			uint8_t type = pcs->prev_effect[e];
@@ -432,7 +461,8 @@ void ebt_player_frame_advance(void)
 
 		if (pcs->porta_speed != 0)
 		{
-			ebt_synth_clear_phase_reset(ch);	//do not reset phase when portamento is active
+			ebt_synth_clear_phase_reset(ch + 0);	//do not reset phase when portamento is active
+			ebt_synth_clear_phase_reset(ch + 4);
 		}
 
 		if ((pcs->porta_speed == 0) || (pcs->base_pitch == 0x7fff) || (pcs->base_pitch_to == 0x7fff))
@@ -481,7 +511,8 @@ void ebt_player_frame_advance(void)
 		if (pcs->out_pitch < 0) pcs->out_pitch = 0;
 		if (pcs->out_pitch > 10 * 12 * 256) pcs->out_pitch = 10 * 12 * 256;
 
-		ebt_synth_set_pitch16(ch, pcs->out_pitch);
+		ebt_synth_set_pitch16(ch + 0, pcs->out_pitch);
+		ebt_synth_set_pitch16(ch + 4, pcs->out_pitch);
 	}
 }
 
@@ -494,7 +525,7 @@ void ebt_player_frame_update(void)
 	if (player.speed_frame == 0)
 	{
 		//check if all patterns has ended, fetch an order position and advance
-		
+
 		int done_cnt = 0;
 
 		for (int ch = 0; ch < PLAYER_CHANNELS; ++ch)

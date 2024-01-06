@@ -102,14 +102,18 @@ BOOL ebt_song_export(const char* filename)
 
 		instrument_struct* is = &song->ins[ins];
 
-		snprintf(buf, sizeof(buf), "const uint8_t ins_%s_%i[] PROGMEM ={", song_name, ins);
+		char ins_name[MAX_INSTRUMENT_NAME_LEN + 1];
+		memset(ins_name, 0, sizeof(ins_name));
+		memcpy(ins_name, is->name, MAX_INSTRUMENT_NAME_LEN);
+
+		snprintf(buf, sizeof(buf), "const uint8_t ins_%s_%i[] PROGMEM ={ //%s", song_name, ins, ins_name);
 		ebt_file_put_line(buf);
 
 		snprintf(buf, sizeof(buf), "0x%2.2x,", is->wave);
 		ebt_file_put_line(buf);
 		snprintf(buf, sizeof(buf), "0x%2.2x,", is->volume);
 		ebt_file_put_line(buf);
-		snprintf(buf, sizeof(buf), "0x%2.2x,", (uint8_t)is->octave);
+		snprintf(buf, sizeof(buf), "0x%2.2x,", (uint8_t)is->offset);
 		ebt_file_put_line(buf);
 		snprintf(buf, sizeof(buf), "0x%2.2x,", (uint8_t)is->detune);
 		ebt_file_put_line(buf);
@@ -126,6 +130,10 @@ BOOL ebt_song_export(const char* filename)
 		snprintf(buf, sizeof(buf), "0x%2.2x,", is->fixed_pitch);
 		ebt_file_put_line(buf);
 		snprintf(buf, sizeof(buf), "0x%2.2x,", is->base_note);
+		ebt_file_put_line(buf);
+		snprintf(buf, sizeof(buf), "0x%2.2x,", is->aux_id);
+		ebt_file_put_line(buf);
+		snprintf(buf, sizeof(buf), "0x%2.2x,", is->aux_mix);
 		ebt_file_put_line(buf);
 
 		ebt_file_put_line("};\n\n");

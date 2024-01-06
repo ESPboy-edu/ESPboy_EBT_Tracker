@@ -9,16 +9,29 @@
 #include <time.h>
 
 #ifdef WIN32
+
 #include <windows.h>
 #include <direct.h>
 #include "dirent.h"
+#include "libsdl/include/SDL.h"
+#ifdef _MSC_VER 
+#define strncasecmp _strnicmp
+#define strcasecmp _stricmp
+#endif
+
 #else
+
 #include <sys/stat.h>
 #include <sys/types.h>
 #include <dirent.h>
+#include <limits.h>
+#include <SDL.h>
+#ifndef MAX_PATH
+#define MAX_PATH PATH_MAX
 #endif
 
-#include "libsdl/include/SDL.h"
+#endif
+
 
 
 #define TITLE	"EBT /ESPboy Tracker/ SDL"
@@ -26,7 +39,6 @@
 #define SAMPLE_RATE			44100
 
 #define FRAME_RATE			60
-
 
 
 struct {
@@ -87,6 +99,17 @@ struct {
 	};
 } Text;
 
+#ifndef BOOL
+#define BOOL int
+#endif
+
+#ifndef TRUE
+#define TRUE 1
+#endif
+
+#ifndef FALSE
+#define FALSE 0
+#endif
 
 
 char dataDirectory[MAX_PATH];
@@ -110,6 +133,9 @@ void log_add(const char *format,...)
 
 	if(!logFile) return;
 
+	va_start(arg, format);
+	printf(format, arg);
+	va_end(arg);
 	va_start(arg,format);
 	vfprintf(logFile,format,arg);
 	va_end(arg);
@@ -485,7 +511,21 @@ void sdl_get_video_config(int& width, int& height, int& scale, int& text_width, 
 }
 
 
-void sdl_load_palette_from_bmp(const char* filename, unsigned int* palette)
+
+void sdl_load_bmp(SDL_Surface** surface, const char* filename)
+{
+	*surface = SDL_LoadBMP(filename);
+
+	if (!*surface)
+	{
+		log_add("Error: couldn't load %s\n", filename);
+		exit(-1);
+	}
+}
+
+
+
+void sdl_load_palette_from_bmp(unsigned int* palette, const char* filename)
 {
 	SDL_Surface* surface = SDL_LoadBMP(filename);
 
@@ -622,6 +662,7 @@ uint8_t sdl_to_ebt_keycode(SDL_Keycode sym)
 	case SDLK_PAGEUP: return KB_PGUP;
 	case SDLK_PAGEDOWN: return KB_PGDOWN;
 	case SDLK_TAB: return KB_TAB;
+	case SDLK_CAPSLOCK: return KB_UNDO;
 	}
 
 	return KB_NONE;
@@ -683,7 +724,7 @@ int main(int argc, char* argv[])
 {
 	strncpy(dataDirectory, SDL_GetBasePath(), sizeof(dataDirectory) - 1);
 	path_trim_to_directory(dataDirectory);
-	strncat(dataDirectory, "data\\", sizeof(dataDirectory) - 1);
+	strncat(dataDirectory, "data/", sizeof(dataDirectory) - 1);
 
 	log_open("log.txt");
 
@@ -696,7 +737,7 @@ int main(int argc, char* argv[])
 
 	for (int argn = 1; argn < (argc - 1); ++argn)
 	{
-		if (_stricmp(argv[argn], "-e") == 0)
+		if (strcasecmp(argv[argn], "-e") == 0)
 		{
 			export_command_line(argv[argn + 1]);
 			exit(0);
@@ -721,25 +762,17 @@ int main(int argc, char* argv[])
 		exit(-1);
 	}
 
-	Screen.font_8x8[0] = SDL_LoadBMP("fonts/custom_8x8.bmp");
-	if (!Screen.font_8x8[0]) exit(1);
-	Screen.font_8x8[1] = SDL_LoadBMP("fonts/c64_8x8.bmp");
-	if (!Screen.font_8x8[1]) exit(1);
-	Screen.font_8x8[2] = SDL_LoadBMP("fonts/msx_8x8.bmp");
-	if (!Screen.font_8x8[2]) exit(1);
-	Screen.font_8x8[3] = SDL_LoadBMP("fonts/zx_8x8.bmp");
-	if (!Screen.font_8x8[3]) exit(1);
+	sdl_load_bmp(&Screen.font_8x8[0], "fonts/custom_8x8.bmp");
+	sdl_load_bmp(&Screen.font_8x8[1], "fonts/c64_8x8.bmp");
+	sdl_load_bmp(&Screen.font_8x8[2], "fonts/msx_8x8.bmp");
+	sdl_load_bmp(&Screen.font_8x8[3], "fonts/zx_8x8.bmp");
 
-	Screen.font_15x16[0] = SDL_LoadBMP("fonts/custom_15x16.bmp");
-	if (!Screen.font_15x16[0]) exit(1);
-	Screen.font_15x16[1] = SDL_LoadBMP("fonts/c64_15x16.bmp");
-	if (!Screen.font_15x16[1]) exit(1);
-	Screen.font_15x16[2] = SDL_LoadBMP("fonts/msx_15x16.bmp");
-	if (!Screen.font_15x16[2]) exit(1);
-	Screen.font_15x16[3] = SDL_LoadBMP("fonts/zx_15x16.bmp");
-	if (!Screen.font_15x16[3]) exit(1);
+	sdl_load_bmp(&Screen.font_15x16[0], "fonts/custom_15x16.bmp");
+	sdl_load_bmp(&Screen.font_15x16[1], "fonts/c64_15x16.bmp");
+	sdl_load_bmp(&Screen.font_15x16[2], "fonts/msx_15x16.bmp");
+	sdl_load_bmp(&Screen.font_15x16[3],"fonts/zx_15x16.bmp");
 
-	sdl_load_palette_from_bmp("fonts/palette_1.bmp", Text.palette);
+	sdl_load_palette_from_bmp(Text.palette, "fonts/palette_1.bmp");
 
 	bool quit = false;
 
