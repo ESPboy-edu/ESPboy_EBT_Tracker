@@ -7,13 +7,10 @@
 
 # About
 
-EBT is a tiny, minimalistic, yet quite powerful chiptune-like music editor with a tracker interface, originally developed for the [ESPboy portable DIY](www.espboy.com) handheld platform.
+EBT is a tiny, minimalistic, yet quite powerful chiptune-like music editor with a tracker interface, originally developed for the [ESPboy portable DIY](www.espboy.com) but it also works on any ESPboy handheld platform.
 The source code is portable, so it may be available on other platforms as well. Currently it features an SDL port, so it can run on a regular desktop PC as well, sharing the same data format, so the song and instrument files are easily transferable between the devices.
 
-
-# v1.1 features
-
-- Added EBT tracks player (Arduino IDE source code) and "export to C array" option, so you can play EBT tracks in your own projects
+# EBT features
 - 4 channels polyphony
 - Speed control with an automatic shuffle
 - Up to 128 order list positions with per-pattern transpose support
@@ -32,6 +29,32 @@ The source code is portable, so it may be available on other platforms as well. 
     - Speed control
 - Stereo support
 - A range of sound output devices supported
+
+
+# EBT v1.1 improvements
+- Play option removed from SONG screen
+- Name and author fields are added to the song file, can be set from the SONG screen
+- Squeeze function added to optimize song data
+- Some waveforms tuned up to match the original wtbeep, to allow easy conversion
+between two
+- Stereo panning reworked a bit, allowing 9 positions left-to-right instead of 3
+- Default panning settings are added
+- An option to swap the LFT/RGT buttons
+- A crash course section added into the manual
+- Two cursor colors swapped to make it more visible with blinking off
+- Play/Stop info line is only shown while the RGT button is held down
+- 32 extra waveforms added, including various noise and modulation effects
+- Sound synthesizer and music player separated into two independent entities
+- A standalone player code that stores data in the program memory
+- Hardware-specific:
+    - LovyanGFX display library supported
+    - 2.0 inch TFT display support (ST7789V) for a custom built EBTboy
+- SDL build specific:
+    - Irrelevant config options such as sound output device are not displayed
+    - 128x128 and 240x340 modes support, with 8x8 and 15x16 fonts
+    - Main control keys are remapped
+    - Direct keyboard support added, for entering numbers, letters, and better
+navigation
 
 
 ![ESPboy2 EBT Tracker pic](https://github.com/ESPboy-edu/ESPboy_EBT_Tracker/blob/main/ESPboy2_EBT_Tracker_look.png?raw=true)
