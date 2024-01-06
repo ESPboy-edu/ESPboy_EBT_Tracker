@@ -24,6 +24,11 @@
 #ifdef USE_TFTESPI
 #include "lib/tftespi/ESPboyInit.h"
 #include "lib/tftespi/ESPboyInit.cpp"
+#include "lib/tftespi/ESPboyTerminalGUI.h"
+#include "lib/tftespi/ESPboyTerminalGUI.cpp"
+#include "lib/tftespi/ESPboyOTA2.h"
+#include "lib/tftespi/ESPboyOTA2.cpp"
+
 #define USE_NBSPI   //can be reverted to default TFT_eSPI method, slower but (presumably) more compatible
 #endif
 
@@ -52,6 +57,9 @@
 #define TARGET_ESPBOY
 
 ESPboyInit myESPboy;
+ESPboyTerminalGUI *terminalGUIobj = NULL;
+ESPboyOTA2 *OTA2obj = NULL;
+
 int8_t hasDAC;
 
 #define INT_SOUND_PIN       D3  //for mono SDM
@@ -522,8 +530,13 @@ void setup()
 {
   Serial.begin(115200);
 
-  myESPboy.begin("ESPboy tracker");
+  myESPboy.begin("ESPboy tracker v1.2");
   hasDAC = myESPboy.mcp.writeDAC(4096, false);  //if present, DAC controls the display backlight brightness
+
+  if (myESPboy.getKeys()&PAD_ACT || myESPboy.getKeys()&PAD_ESC) { 
+     terminalGUIobj = new ESPboyTerminalGUI(&myESPboy.tft, &myESPboy.mcp);
+     OTA2obj = new ESPboyOTA2(terminalGUIobj);
+  }
 
   printf("RAM at power up %i bytes\n", ESP.getFreeHeap());
   
